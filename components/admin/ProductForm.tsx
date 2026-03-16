@@ -27,6 +27,15 @@ interface ProductImage {
   preview?: string
 }
 
+interface Review {
+  id: string
+  reviewer_name: string
+  reviewer_avatar: string | null
+  rating: number
+  content: string
+  created_at: string
+}
+
 interface Props {
   categories: Category[]
   product?: any
@@ -55,7 +64,6 @@ export function ProductForm({ categories, product }: Props) {
     faq_html: product?.faq_html ?? '',
   })
 
-  // Cover image
   const [coverImage, setCoverImage] = useState<ProductImage | null>(
     product?.product_images?.find((img: any) => img.sort_order === 0)
       ? {
@@ -68,7 +76,6 @@ export function ProductForm({ categories, product }: Props) {
       : null
   )
 
-  // Extra images
   const [extraImages, setExtraImages] = useState<ProductImage[]>(
     product?.product_images
       ?.filter((img: any) => img.sort_order > 0)
@@ -92,46 +99,39 @@ export function ProductForm({ categories, product }: Props) {
     })) ?? []
   )
 
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviewsLoaded, setReviewsLoaded] = useState(false)
+  const [newReview, setNewReview] = useState({
+    reviewer_name: '', rating: 5, content: '', reviewer_avatar: ''
+  })
+  const [savingReview, setSavingReview] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [uploadingCover, setUploadingCover] = useState(false)
-  const [uploadingExtra, setUploadingExtra] = useState(false)
-  const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'content' | 'variants'>('basic')
+  const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'content' | 'variants' | 'reviews'>('basic')
 
   const handleNameChange = (name: string) => {
-    setForm(f => ({
-      ...f,
-      name,
-      slug: isEdit ? f.slug : slugify(name),
-    }))
+    setForm(f => ({ ...f, name, slug: isEdit ? f.slug : slugify(name) }))
   }
 
-  // Upload single file to Supabase Storage
   const uploadFile = async (file: File, path: string): Promise<string> => {
     const supabase = createClient()
-    const { data, error } = await supabase.storage
-      .from('products')
-      .upload(path, file, { upsert: true })
+    const { error } = await supabase.storage.from('products').upload(path, file, { upsert: true })
     if (error) throw error
     const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(path)
     return publicUrl
   }
 
-  // Handle cover image select
-  const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { toast.error('Ảnh tối đa 5MB'); return }
-
     const preview = URL.createObjectURL(file)
     setCoverImage({ image_url: preview, alt_text: form.name, sort_order: 0, is_cover: true, file, preview })
     toast.success('Đã chọn ảnh bìa!')
   }
 
-  // Handle extra images select
-  const handleExtraSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExtraSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     if (files.length === 0) return
-
     const newImages: ProductImage[] = files.map((file, i) => ({
       image_url: URL.createObjectURL(file),
       alt_text: form.name,
@@ -139,31 +139,18 @@ export function ProductForm({ categories, product }: Props) {
       file,
       preview: URL.createObjectURL(file),
     }))
-
     setExtraImages(prev => [...prev, ...newImages])
     toast.success(`Đã thêm ${files.length} ảnh!`)
   }
 
-  const removeCover = () => setCoverImage(null)
-
-  const removeExtra = (index: number) => {
-    setExtraImages(prev => prev.filter((_, i) => i !== index))
-  }
-
   const addVariant = () => {
     setVariants(prev => [...prev, {
-      name: 'Thời hạn',
-      option_value: '',
-      price: '',
-      compare_at_price: '',
-      stock: '0',
-      is_default: prev.length === 0,
+      name: 'Thời hạn', option_value: '', price: '',
+      compare_at_price: '', stock: '0', is_default: prev.length === 0,
     }])
   }
 
-  const removeVariant = (index: number) => {
-    setVariants(prev => prev.filter((_, i) => i !== index))
-  }
+  const removeVariant = (index: number) => setVariants(prev => prev.filter((_, i) => i !== index))
 
   const updateVariant = (index: number, field: keyof Variant, value: any) => {
     if (field === 'is_default') {
@@ -173,14 +160,50 @@ export function ProductForm({ categories, product }: Props) {
     }
   }
 
-  const handleSave = async () => {
-    if (!form.name || !form.price) {
-      toast.error('Vui lòng điền tên và giá sản phẩm')
+  // Reviews
+  const loadReviews = async () => {
+    if (!product?.id || reviewsLoaded) return
+    const supabase = createClient()
+    const { data } = await supabase.from('product_reviews').select('*')
+      .eq('product_id', product.id).order('created_at', { ascending: false })
+    setReviews(data ?? [])
+    setReviewsLoaded(true)
+  }
+
+  const handleAddReview = async () => {
+    if (!newReview.reviewer_name || !newReview.content) {
+      toast.error('Vui lòng điền tên và nội dung')
       return
     }
+    setSavingReview(true)
+    const supabase = createClient()
+    const { data } = await supabase.from('product_reviews').insert({
+      product_id: product.id,
+      reviewer_name: newReview.reviewer_name,
+      rating: newReview.rating,
+      content: newReview.content,
+      reviewer_avatar: newReview.reviewer_avatar || null,
+    }).select().single()
+    if (data) {
+      setReviews(prev => [data, ...prev])
+      setNewReview({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '' })
+      toast.success('Đã thêm đánh giá!')
+    }
+    setSavingReview(false)
+  }
+
+  const handleDeleteReview = async (id: string) => {
+    if (!confirm('Xóa đánh giá này?')) return
+    const supabase = createClient()
+    await supabase.from('product_reviews').delete().eq('id', id)
+    setReviews(prev => prev.filter(r => r.id !== id))
+    toast.success('Đã xóa!')
+  }
+
+  const handleSave = async () => {
+    if (!form.name || !form.price) { toast.error('Vui lòng điền tên và giá sản phẩm'); return }
     setSaving(true)
     const supabase = createClient()
-
     try {
       const productData = {
         name: form.name,
@@ -211,7 +234,6 @@ export function ProductForm({ categories, product }: Props) {
         productId = data.id
       }
 
-      // Upload & save cover image
       if (coverImage) {
         let imageUrl = coverImage.image_url
         if (coverImage.file) {
@@ -219,22 +241,12 @@ export function ProductForm({ categories, product }: Props) {
           imageUrl = await uploadFile(coverImage.file, `${productId}/cover.${ext}`)
         }
         if (coverImage.id) {
-          await supabase.from('product_images').update({
-            image_url: imageUrl,
-            alt_text: form.name,
-            sort_order: 0,
-          }).eq('id', coverImage.id)
+          await supabase.from('product_images').update({ image_url: imageUrl, alt_text: form.name, sort_order: 0 }).eq('id', coverImage.id)
         } else {
-          await supabase.from('product_images').insert({
-            product_id: productId,
-            image_url: imageUrl,
-            alt_text: form.name,
-            sort_order: 0,
-          })
+          await supabase.from('product_images').insert({ product_id: productId, image_url: imageUrl, alt_text: form.name, sort_order: 0 })
         }
       }
 
-      // Upload & save extra images
       for (let i = 0; i < extraImages.length; i++) {
         const img = extraImages[i]
         let imageUrl = img.image_url
@@ -243,45 +255,30 @@ export function ProductForm({ categories, product }: Props) {
           imageUrl = await uploadFile(img.file, `${productId}/extra-${i + 1}-${Date.now()}.${ext}`)
         }
         if (img.id) {
-          await supabase.from('product_images').update({
-            image_url: imageUrl,
-            alt_text: img.alt_text || form.name,
-            sort_order: i + 1,
-          }).eq('id', img.id)
+          await supabase.from('product_images').update({ image_url: imageUrl, alt_text: img.alt_text || form.name, sort_order: i + 1 }).eq('id', img.id)
         } else {
-          await supabase.from('product_images').insert({
-            product_id: productId,
-            image_url: imageUrl,
-            alt_text: img.alt_text || form.name,
-            sort_order: i + 1,
-          })
+          await supabase.from('product_images').insert({ product_id: productId, image_url: imageUrl, alt_text: img.alt_text || form.name, sort_order: i + 1 })
         }
       }
 
-      // Handle variants
       if (variants.length > 0) {
         if (isEdit) {
           const keepIds = variants.filter(v => v.id).map(v => v.id!)
           if (keepIds.length > 0) {
-            await supabase.from('product_variants')
-              .delete().eq('product_id', productId)
-              .not('id', 'in', `(${keepIds.join(',')})`)
+            await supabase.from('product_variants').delete().eq('product_id', productId).not('id', 'in', `(${keepIds.join(',')})`)
           } else {
             await supabase.from('product_variants').delete().eq('product_id', productId)
           }
         }
-
         for (let i = 0; i < variants.length; i++) {
           const v = variants[i]
           const variantData = {
             product_id: productId,
-            name: v.name,
-            option_value: v.option_value,
+            name: v.name, option_value: v.option_value,
             price: v.price ? parseInt(v.price) : null,
             compare_at_price: v.compare_at_price ? parseInt(v.compare_at_price) : null,
             stock: parseInt(v.stock) || 0,
-            is_default: v.is_default,
-            sort_order: i,
+            is_default: v.is_default, sort_order: i,
           }
           if (v.id) {
             await supabase.from('product_variants').update(variantData).eq('id', v.id)
@@ -313,6 +310,7 @@ export function ProductForm({ categories, product }: Props) {
     { id: 'images', label: `🖼️ Hình Ảnh (${(coverImage ? 1 : 0) + extraImages.length})` },
     { id: 'content', label: '📝 Nội Dung' },
     { id: 'variants', label: `🔧 Biến Thể (${variants.length})` },
+    { id: 'reviews', label: `⭐ Đánh Giá (${reviews.length})` },
   ]
 
   return (
@@ -346,7 +344,11 @@ export function ProductForm({ categories, product }: Props) {
       {/* Tabs */}
       <div className="flex border-b border-slate-200 mb-6 gap-1 overflow-x-auto">
         {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+          <button key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id as any)
+              if (tab.id === 'reviews') loadReviews()
+            }}
             className="flex-shrink-0 px-5 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap"
             style={{
               borderColor: activeTab === tab.id ? '#2563EB' : 'transparent',
@@ -413,9 +415,7 @@ export function ProductForm({ categories, product }: Props) {
               <h2 className="font-bold text-slate-900">Cài Đặt</h2>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Trạng thái</label>
-                <select value={form.status}
-                  onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                  className="input">
+                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="input">
                   <option value="active">✅ Active — Hiển thị</option>
                   <option value="draft">🔒 Draft — Ẩn</option>
                   <option value="out_of_stock">❌ Hết hàng</option>
@@ -423,9 +423,7 @@ export function ProductForm({ categories, product }: Props) {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Loại giao hàng</label>
-                <select value={form.delivery_type}
-                  onChange={e => setForm(f => ({ ...f, delivery_type: e.target.value }))}
-                  className="input">
+                <select value={form.delivery_type} onChange={e => setForm(f => ({ ...f, delivery_type: e.target.value }))} className="input">
                   <option value="ready_account">📦 Cấp sẵn</option>
                   <option value="upgrade_owner">📧 Nâng cấp chính chủ</option>
                   <option value="both">🔀 Cả 2 lựa chọn</option>
@@ -433,9 +431,7 @@ export function ProductForm({ categories, product }: Props) {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Danh mục</label>
-                <select value={form.category_id}
-                  onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
-                  className="input">
+                <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))} className="input">
                   <option value="">Chọn danh mục</option>
                   {categories.map(cat => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -444,9 +440,7 @@ export function ProductForm({ categories, product }: Props) {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Badge</label>
-                <select value={form.badge_text}
-                  onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))}
-                  className="input">
+                <select value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))} className="input">
                   <option value="">Không có badge</option>
                   <option value="Hot">🔥 Hot</option>
                   <option value="Mới">✨ Mới</option>
@@ -467,38 +461,28 @@ export function ProductForm({ categories, product }: Props) {
       {/* ── Tab 2: Images ── */}
       {activeTab === 'images' && (
         <div className="space-y-6">
-
-          {/* Cover image */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <div className="flex items-center gap-2 mb-4">
               <Star size={18} style={{ color: '#D97706' }} />
               <h2 className="font-bold text-slate-900">Ảnh Bìa Sản Phẩm</h2>
               <span className="text-xs text-slate-400">(Hiển thị chính, quan trọng nhất)</span>
             </div>
-
             {coverImage ? (
               <div className="relative w-48">
-                <img
-                  src={coverImage.preview || coverImage.image_url}
-                  alt="Cover"
-                  className="w-48 h-48 object-cover rounded-2xl border-2 border-blue-200"
-                />
-                <button onClick={removeCover}
-                  className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md transition-colors">
+                <img src={coverImage.preview || coverImage.image_url} alt="Cover"
+                  className="w-48 h-48 object-cover rounded-2xl border-2 border-blue-200" />
+                <button onClick={() => setCoverImage(null)}
+                  className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md">
                   <X size={14} />
                 </button>
                 <div className="mt-2">
-                  <input
-                    value={coverImage.alt_text}
+                  <input value={coverImage.alt_text}
                     onChange={e => setCoverImage(prev => prev ? { ...prev, alt_text: e.target.value } : null)}
-                    placeholder="Alt text (SEO)"
-                    className="input text-xs"
-                  />
+                    placeholder="Alt text (SEO)" className="input text-xs" />
                 </div>
               </div>
             ) : (
-              <div
-                onClick={() => coverInputRef.current?.click()}
+              <div onClick={() => coverInputRef.current?.click()}
                 className="w-48 h-48 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
                 style={{ borderColor: '#CBD5E1' }}>
                 <ImagePlus size={28} className="mb-2 text-slate-400" />
@@ -506,18 +490,9 @@ export function ProductForm({ categories, product }: Props) {
                 <p className="text-xs text-slate-400 mt-0.5">PNG, JPG tối đa 5MB</p>
               </div>
             )}
-
-            <input
-              ref={coverInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleCoverSelect}
-            />
-
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverSelect} />
             {!coverImage && (
-              <button
-                onClick={() => coverInputRef.current?.click()}
+              <button onClick={() => coverInputRef.current?.click()}
                 className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
                 style={{ borderColor: '#2563EB', color: '#2563EB' }}>
                 <Upload size={16} /> Tải ảnh bìa lên
@@ -525,33 +500,21 @@ export function ProductForm({ categories, product }: Props) {
             )}
           </div>
 
-          {/* Extra images */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-bold text-slate-900">Ảnh Phụ Sản Phẩm</h2>
                 <p className="text-sm text-slate-400 mt-0.5">Thêm nhiều ảnh để tăng SEO và trải nghiệm khách hàng</p>
               </div>
-              <button
-                onClick={() => extraInputRef.current?.click()}
+              <button onClick={() => extraInputRef.current?.click()}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
                 style={{ borderColor: '#2563EB', color: '#2563EB' }}>
                 <Plus size={16} /> Thêm ảnh
               </button>
             </div>
-
-            <input
-              ref={extraInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleExtraSelect}
-            />
-
+            <input ref={extraInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleExtraSelect} />
             {extraImages.length === 0 ? (
-              <div
-                onClick={() => extraInputRef.current?.click()}
+              <div onClick={() => extraInputRef.current?.click()}
                 className="h-32 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
                 style={{ borderColor: '#CBD5E1' }}>
                 <ImagePlus size={24} className="mb-1.5 text-slate-300" />
@@ -562,32 +525,22 @@ export function ProductForm({ categories, product }: Props) {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {extraImages.map((img, index) => (
                   <div key={index} className="relative group">
-                    <img
-                      src={img.preview || img.image_url}
-                      alt={img.alt_text}
-                      className="w-full aspect-square object-cover rounded-xl border border-slate-200"
-                    />
-                    <button
-                      onClick={() => removeExtra(index)}
+                    <img src={img.preview || img.image_url} alt={img.alt_text}
+                      className="w-full aspect-square object-cover rounded-xl border border-slate-200" />
+                    <button onClick={() => setExtraImages(prev => prev.filter((_, i) => i !== index))}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md">
                       <X size={12} />
                     </button>
-                    <input
-                      value={img.alt_text}
+                    <input value={img.alt_text}
                       onChange={e => {
                         const updated = [...extraImages]
                         updated[index] = { ...updated[index], alt_text: e.target.value }
                         setExtraImages(updated)
                       }}
-                      placeholder="Alt text"
-                      className="input text-xs mt-1.5 py-1"
-                    />
+                      placeholder="Alt text" className="input text-xs mt-1.5 py-1" />
                   </div>
                 ))}
-
-                {/* Add more button */}
-                <div
-                  onClick={() => extraInputRef.current?.click()}
+                <div onClick={() => extraInputRef.current?.click()}
                   className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
                   style={{ borderColor: '#CBD5E1' }}>
                   <Plus size={20} className="text-slate-300" />
@@ -597,12 +550,11 @@ export function ProductForm({ categories, product }: Props) {
             )}
           </div>
 
-          {/* SEO tip */}
           <div className="rounded-2xl p-4 border" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
             <p className="text-sm font-bold mb-1" style={{ color: '#1E40AF' }}>💡 Mẹo SEO cho hình ảnh</p>
             <ul className="text-xs space-y-1" style={{ color: '#3B82F6' }}>
               <li>• Điền alt text mô tả rõ nội dung ảnh để Google index tốt hơn</li>
-              <li>• Dùng ảnh có kích thước 1:1 hoặc 16:9, tối thiểu 800x800px</li>
+              <li>• Dùng ảnh có kích thước 16:9, tối thiểu 1280x720px</li>
               <li>• Tên file ảnh nên có từ khóa (VD: chatgpt-plus-business.jpg)</li>
               <li>• Thêm 3-5 ảnh phụ giúp tăng thời gian ở lại trang</li>
             </ul>
@@ -621,13 +573,10 @@ export function ProductForm({ categories, product }: Props) {
           ].map(({ key, label, placeholder, rows }) => (
             <div key={key} className="bg-white rounded-2xl border border-slate-200 p-6">
               <label className="block text-sm font-bold text-slate-700 mb-3">{label}</label>
-              <textarea
-                value={(form as any)[key]}
+              <textarea value={(form as any)[key]}
                 onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                rows={rows}
-                className="input resize-y font-mono text-xs leading-relaxed"
-                placeholder={placeholder}
-              />
+                rows={rows} className="input resize-y font-mono text-xs leading-relaxed"
+                placeholder={placeholder} />
               {(form as any)[key] && (
                 <details className="mt-3">
                   <summary className="text-xs font-semibold cursor-pointer" style={{ color: '#2563EB' }}>
@@ -650,9 +599,7 @@ export function ProductForm({ categories, product }: Props) {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="font-bold text-slate-900">Biến Thể Sản Phẩm</h2>
-                <p className="text-sm text-slate-400 mt-0.5">
-                  VD: 1 tháng / 3 tháng / 1 năm — Cấp sẵn / Chính chủ
-                </p>
+                <p className="text-sm text-slate-400 mt-0.5">VD: 1 tháng / 3 tháng / 1 năm</p>
               </div>
               <button onClick={addVariant}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
@@ -660,7 +607,6 @@ export function ProductForm({ categories, product }: Props) {
                 <Plus size={16} /> Thêm biến thể
               </button>
             </div>
-
             {variants.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl">
                 <p className="text-slate-400 text-sm mb-1">Chưa có biến thể</p>
@@ -674,50 +620,41 @@ export function ProductForm({ categories, product }: Props) {
             ) : (
               <div className="space-y-4">
                 {variants.map((variant, index) => (
-                  <div key={index}
-                    className="border-2 rounded-2xl p-5 relative transition-all"
+                  <div key={index} className="border-2 rounded-2xl p-5 relative transition-all"
                     style={{ borderColor: variant.is_default ? '#2563EB' : '#E2E8F0' }}>
                     {variant.is_default && (
                       <span className="absolute -top-3 left-4 text-xs font-bold px-2.5 py-1 rounded-full text-white"
-                        style={{ background: '#2563EB' }}>
-                        ★ Mặc định
-                      </span>
+                        style={{ background: '#2563EB' }}>★ Mặc định</span>
                     )}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Tên biến thể</label>
-                        <input value={variant.name}
-                          onChange={e => updateVariant(index, 'name', e.target.value)}
+                        <input value={variant.name} onChange={e => updateVariant(index, 'name', e.target.value)}
                           placeholder="VD: Thời hạn" className="input text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Giá trị hiển thị</label>
-                        <input value={variant.option_value}
-                          onChange={e => updateVariant(index, 'option_value', e.target.value)}
+                        <input value={variant.option_value} onChange={e => updateVariant(index, 'option_value', e.target.value)}
                           placeholder="VD: 1 năm, 3 tháng..." className="input text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Tồn kho</label>
-                        <input type="number" value={variant.stock}
-                          onChange={e => updateVariant(index, 'stock', e.target.value)}
+                        <input type="number" value={variant.stock} onChange={e => updateVariant(index, 'stock', e.target.value)}
                           placeholder="0" className="input text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Giá bán (VND)</label>
-                        <input type="number" value={variant.price}
-                          onChange={e => updateVariant(index, 'price', e.target.value)}
+                        <input type="number" value={variant.price} onChange={e => updateVariant(index, 'price', e.target.value)}
                           placeholder="Để trống = giá SP" className="input text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Giá gốc (VND)</label>
-                        <input type="number" value={variant.compare_at_price}
-                          onChange={e => updateVariant(index, 'compare_at_price', e.target.value)}
+                        <input type="number" value={variant.compare_at_price} onChange={e => updateVariant(index, 'compare_at_price', e.target.value)}
                           placeholder="Để trống = giá gốc SP" className="input text-sm" />
                       </div>
                       <div className="flex items-end gap-3 pb-1">
                         <label className="flex items-center gap-2 cursor-pointer">
-                          <input type="radio" name="default_variant"
-                            checked={variant.is_default}
+                          <input type="radio" name="default_variant" checked={variant.is_default}
                             onChange={() => updateVariant(index, 'is_default', true)}
                             style={{ accentColor: '#2563EB' }} />
                           <span className="text-xs font-medium text-slate-600">Mặc định</span>
@@ -733,19 +670,120 @@ export function ProductForm({ categories, product }: Props) {
               </div>
             )}
           </div>
-
           <div className="flex justify-end">
             <button onClick={handleSave} disabled={saving}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white disabled:opacity-60"
               style={{ background: 'linear-gradient(135deg, #2563EB, #1d4ed8)' }}>
-              {saving ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Đang lưu...
-                </span>
-              ) : <><Save size={16} /> {isEdit ? 'Lưu Thay Đổi' : 'Thêm Sản Phẩm'}</>}
+              {saving ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <><Save size={16} /> {isEdit ? 'Lưu Thay Đổi' : 'Thêm Sản Phẩm'}</>}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Tab 5: Reviews ── */}
+      {activeTab === 'reviews' && (
+        <div className="space-y-5">
+          {!product?.id ? (
+            <div className="text-center py-16 text-slate-400">
+              <div className="text-4xl mb-3">⭐</div>
+              <p>Lưu sản phẩm trước khi thêm đánh giá</p>
+            </div>
+          ) : (
+            <>
+              {/* Add review */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <h2 className="font-bold text-slate-900 mb-4">➕ Thêm Đánh Giá</h2>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        Tên người đánh giá
+                      </label>
+                      <input value={newReview.reviewer_name}
+                        onChange={e => setNewReview(r => ({ ...r, reviewer_name: e.target.value }))}
+                        placeholder="Nguyễn Văn A" className="input text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                        Số sao
+                      </label>
+                      <select value={newReview.rating}
+                        onChange={e => setNewReview(r => ({ ...r, rating: parseInt(e.target.value) }))}
+                        className="input text-sm">
+                        <option value={5}>⭐⭐⭐⭐⭐ 5 sao</option>
+                        <option value={4}>⭐⭐⭐⭐ 4 sao</option>
+                        <option value={3}>⭐⭐⭐ 3 sao</option>
+                        <option value={2}>⭐⭐ 2 sao</option>
+                        <option value={1}>⭐ 1 sao</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      Nội dung đánh giá
+                    </label>
+                    <textarea value={newReview.content}
+                      onChange={e => setNewReview(r => ({ ...r, content: e.target.value }))}
+                      rows={3} className="input resize-none text-sm"
+                      placeholder="Sản phẩm rất tốt, giao hàng nhanh..." />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      URL Avatar (tùy chọn)
+                    </label>
+                    <input value={newReview.reviewer_avatar}
+                      onChange={e => setNewReview(r => ({ ...r, reviewer_avatar: e.target.value }))}
+                      placeholder="https://..." className="input text-sm" />
+                  </div>
+                  <button onClick={handleAddReview} disabled={savingReview}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ background: '#2563EB' }}>
+                    {savingReview
+                      ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      : '➕'} Thêm Đánh Giá
+                  </button>
+                </div>
+              </div>
+
+              {/* Review list */}
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-900">Danh sách đánh giá ({reviews.length})</h2>
+                </div>
+                {reviews.length === 0 ? (
+                  <div className="text-center py-10 text-slate-400">Chưa có đánh giá nào</div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {reviews.map(review => (
+                      <div key={review.id} className="p-4 flex items-start gap-3 hover:bg-slate-50">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                          style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
+                          {review.reviewer_avatar
+                            ? <img src={review.reviewer_avatar} alt="" className="w-full h-full object-cover rounded-full" />
+                            : review.reviewer_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm text-slate-900">{review.reviewer_name}</p>
+                            <span className="text-xs">{'⭐'.repeat(review.rating)}</span>
+                          </div>
+                          <p className="text-sm text-slate-600">{review.content}</p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {new Date(review.created_at).toLocaleDateString('vi-VN')}
+                          </p>
+                        </div>
+                        <button onClick={() => handleDeleteReview(review.id)}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

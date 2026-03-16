@@ -1,119 +1,49 @@
 'use client'
 import { useState } from 'react'
 import { useCartStore } from '@/lib/stores/cart'
-import { formatPrice, discountPercent, cn } from '@/lib/utils'
-import { toast } from 'sonner'
+import { formatPrice, discountPercent } from '@/lib/utils'
+import { ShoppingCart, Zap, Shield, Clock, Star, ChevronRight, Copy, Check } from 'lucide-react'
 import Link from 'next/link'
-import { ShoppingCart, Zap, Shield, Phone, Check, Minus, Plus, ChevronRight } from 'lucide-react'
-import type { Product, ProductVariant } from '@/types'
-import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import type { Product } from '@/types'
 
-const ICONS: Record<string, React.ReactNode> = {
-  'ai-chatbot': (
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <rect width="120" height="120" rx="28" fill="#EFF6FF"/>
-      <rect x="26" y="36" width="68" height="48" rx="12" fill="#2563EB"/>
-      <circle cx="44" cy="60" r="8" fill="white" fillOpacity="0.9"/>
-      <circle cx="76" cy="60" r="8" fill="white" fillOpacity="0.9"/>
-      <circle cx="44" cy="60" r="4" fill="#2563EB"/>
-      <circle cx="76" cy="60" r="4" fill="#2563EB"/>
-      <path d="M50 73h20" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
-      <path d="M47 36v-9M73 36v-9" stroke="#93C5FD" strokeWidth="3.5" strokeLinecap="round"/>
-      <circle cx="47" cy="24" r="5" fill="#3B82F6"/>
-      <circle cx="73" cy="24" r="5" fill="#3B82F6"/>
-      <rect x="16" y="50" width="10" height="20" rx="5" fill="#93C5FD"/>
-      <rect x="94" y="50" width="10" height="20" rx="5" fill="#93C5FD"/>
-    </svg>
-  ),
-  'thiet-ke': (
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <rect width="120" height="120" rx="28" fill="#F5F3FF"/>
-      <circle cx="60" cy="60" r="32" fill="#7C3AED"/>
-      <circle cx="60" cy="60" r="20" fill="white"/>
-      <circle cx="60" cy="32" r="8" fill="#A78BFA"/>
-      <circle cx="60" cy="88" r="8" fill="#A78BFA"/>
-      <circle cx="32" cy="60" r="8" fill="#A78BFA"/>
-      <circle cx="88" cy="60" r="8" fill="#A78BFA"/>
-      <circle cx="60" cy="60" r="8" fill="#7C3AED"/>
-    </svg>
-  ),
-  'video-am-nhac': (
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <rect width="120" height="120" rx="28" fill="#FFF1F2"/>
-      <rect x="16" y="28" width="88" height="64" rx="14" fill="#EF4444"/>
-      <rect x="22" y="34" width="76" height="52" rx="10" fill="#FCA5A5" fillOpacity="0.25"/>
-      <path d="M50 44l32 16-32 16V44z" fill="white"/>
-    </svg>
-  ),
-  'hoc-tap': (
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <rect width="120" height="120" rx="28" fill="#F0FDF4"/>
-      <path d="M60 22L96 40L60 58L24 40L60 22Z" fill="#16A34A"/>
-      <path d="M36 50v22c0 6 10.5 16 24 16s24-10 24-16V50" stroke="#16A34A" strokeWidth="4.5" strokeLinecap="round"/>
-      <line x1="96" y1="40" x2="96" y2="68" stroke="#16A34A" strokeWidth="4.5" strokeLinecap="round"/>
-      <circle cx="96" cy="74" r="6" fill="#16A34A"/>
-    </svg>
-  ),
-  'giai-tri': (
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <rect width="120" height="120" rx="28" fill="#FFFBEB"/>
-      <circle cx="60" cy="60" r="36" fill="#D97706"/>
-      <circle cx="60" cy="60" r="16" fill="#FEF3C7"/>
-      <circle cx="60" cy="60" r="6" fill="#D97706"/>
-      <path d="M60 24v10M60 86v10M24 60h10M86 60h10" stroke="#D97706" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M38 38l7 7M75 75l7 7M38 82l7-7M75 45l7-7" stroke="#FCD34D" strokeWidth="3.5" strokeLinecap="round"/>
-    </svg>
-  ),
-  'cong-cu-dev': (
-    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <rect width="120" height="120" rx="28" fill="#ECFEFF"/>
-      <rect x="14" y="32" width="92" height="58" rx="10" fill="#0891B2"/>
-      <rect x="22" y="40" width="76" height="36" rx="6" fill="#CFFAFE"/>
-      <path d="M36 52l-10 8 10 8" stroke="#0891B2" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M54 52l10 8-10 8" stroke="#0891B2" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M44 96H60M60 96H76M60 90v6" stroke="#0891B2" strokeWidth="3.5" strokeLinecap="round"/>
-    </svg>
-  ),
+interface Review {
+  id: string
+  reviewer_name: string
+  reviewer_avatar: string | null
+  rating: number
+  content: string
+  created_at: string
 }
 
-const DEFAULT_ICON = (
-  <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-    <rect width="120" height="120" rx="28" fill="#F1F5F9"/>
-    <rect x="30" y="30" width="60" height="60" rx="12" fill="#94A3B8"/>
-    <path d="M45 60h30M60 45v30" stroke="white" strokeWidth="4" strokeLinecap="round"/>
-  </svg>
-)
-
-const TABS = [
-  { id: 'description', label: '📋 Mô Tả' },
-  { id: 'guide', label: '📖 Hướng Dẫn' },
-  { id: 'warranty', label: '🛡️ Bảo Hành' },
-  { id: 'faq', label: '❓ FAQ' },
-]
-
-export function ProductDetail({ product }: { product: Product }) {
-  const router = useRouter()
+export function ProductDetail({ product }: { product: Product & { product_reviews?: Review[] } }) {
   const { addItem } = useCartStore()
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
-    product.product_variants?.find(v => v.is_default) ?? product.product_variants?.[0] ?? null
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    product.product_variants?.find(v => v.is_default)?.id ?? product.product_variants?.[0]?.id ?? null
   )
   const [quantity, setQuantity] = useState(1)
   const [upgradeEmail, setUpgradeEmail] = useState('')
-  const [activeTab, setActiveTab] = useState('description')
+  const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description')
+  const [activeImage, setActiveImage] = useState(0)
+  const [copied, setCopied] = useState(false)
 
+  const selectedVariant = product.product_variants?.find(v => v.id === selectedVariantId) ?? null
   const price = selectedVariant?.price ?? product.price
   const compareAt = selectedVariant?.compare_at_price ?? product.compare_at_price
   const discount = discountPercent(price, compareAt ?? 0)
-  const isOutOfStock = product.stock === 0 || (selectedVariant ? selectedVariant.stock === 0 : false)
-  const needsEmail = product.delivery_type === 'upgrade_owner' || product.delivery_type === 'both'
-  const icon = ICONS[product.categories?.slug ?? ''] ?? DEFAULT_ICON
+  const stock = selectedVariant?.stock ?? product.stock
+  const isOutOfStock = stock === 0
 
-  const tabContent: Record<string, string | null | undefined> = {
-    description: product.description_html,
-    guide: product.usage_guide_html,
-    warranty: product.warranty_html,
-    faq: product.faq_html,
-  }
+  const images = product.product_images?.sort((a, b) => a.sort_order - b.sort_order) ?? []
+  const coverImage = images[0] ?? null
+  const extraImages = images.slice(1)
+
+  const reviews = product.product_reviews ?? []
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+    : 5
+
+  const needsUpgradeEmail = product.delivery_type === 'upgrade_owner' || product.delivery_type === 'both'
 
   const handleAddToCart = () => {
     if (isOutOfStock) return
@@ -124,134 +54,144 @@ export function ProductDetail({ product }: { product: Product }) {
   const handleBuyNow = () => {
     if (isOutOfStock) return
     addItem(product, selectedVariant, quantity, upgradeEmail)
-    router.push('/checkout')
+    window.location.href = '/checkout'
   }
 
+  const TABS = [
+    { id: 'description', label: '📋 Mô Tả & Hướng Dẫn' },
+    { id: 'reviews', label: `⭐ Đánh Giá (${reviews.length})` },
+  ]
+
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
 
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm mb-8 flex-wrap" style={{ color: '#94A3B8' }}>
+      <nav className="flex items-center gap-2 text-xs text-slate-400 mb-6">
         <Link href="/" className="hover:text-blue-600 transition-colors">Trang chủ</Link>
-        <ChevronRight size={14} />
+        <ChevronRight size={12} />
         <Link href="/shop" className="hover:text-blue-600 transition-colors">Sản phẩm</Link>
+        <ChevronRight size={12} />
         {product.categories && (
           <>
-            <ChevronRight size={14} />
-            <Link href={`/shop?category=${product.categories.slug}`} className="hover:text-blue-600 transition-colors">
-              {product.categories.name}
-            </Link>
+            <Link href={`/shop?category=${product.categories.slug}`}
+              className="hover:text-blue-600 transition-colors">{product.categories.name}</Link>
+            <ChevronRight size={12} />
           </>
         )}
-        <ChevronRight size={14} />
-        <span className="text-slate-700 font-medium line-clamp-1">{product.name}</span>
+        <span className="text-slate-600 font-medium truncate max-w-[200px]">{product.name}</span>
       </nav>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
 
-        {/* Left: Product visual */}
-        <div className="space-y-4">
-          {/* Main image */}
-          <div
-            className="relative w-full rounded-3xl overflow-hidden"
-            style={{
-              background: 'linear-gradient(145deg, #EFF6FF 0%, #E0F2FE 50%, #F0FDF4 100%)',
-              paddingTop: '75%',
-            }}
-          >
-            {/* Decorative blobs */}
-            <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-30 pointer-events-none"
-              style={{ background: 'radial-gradient(circle, #3B82F6, transparent)' }} />
-            <div className="absolute -bottom-12 -left-12 w-44 h-44 rounded-full opacity-20 pointer-events-none"
-              style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
+        {/* LEFT: Images */}
+        <div className="space-y-3">
+          {/* Cover 16:9 */}
+          <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200"
+            style={{ paddingTop: '56.25%', background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe, #f0fdf4)' }}>
+            <div className="absolute inset-0">
+              {coverImage ? (
+                <img
+                  src={images[activeImage]?.image_url ?? coverImage.image_url}
+                  alt={images[activeImage]?.alt_text ?? product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-8xl opacity-30">🤖</div>
+                </div>
+              )}
 
-            {/* Product image hoặc icon fallback */}
-<div className="absolute inset-0 flex items-center justify-center">
-  {product.product_images && product.product_images.length > 0 ? (
-    <img
-      src={product.product_images.find((img: any) => img.sort_order === 0)?.image_url
-        || product.product_images[0]?.image_url}
-      alt={product.product_images[0]?.alt_text || product.name}
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    <div className="w-40 h-40 md:w-48 md:h-48 drop-shadow-xl">
-      {icon}
-    </div>
-  )}
-</div>
-
-            {/* Badges */}
-            {product.badge_text && (
-              <div className="absolute top-5 left-5">
-                <span className="text-sm font-bold px-3 py-1.5 rounded-xl shadow-sm text-white"
-                  style={{
-                    background: product.badge_text === 'Hot' ? '#EF4444' : product.badge_text === 'Mới' ? '#22C55E' : '#F97316'
-                  }}>
-                  {product.badge_text}
-                </span>
-              </div>
-            )}
-            {discount >= 10 && (
-              <div className="absolute top-5 right-5">
-                <span className="text-sm font-black px-3 py-1.5 rounded-xl shadow-sm"
-                  style={{ background: '#FEF9C3', color: '#854D0E' }}>
-                  -{discount}%
-                </span>
-              </div>
-            )}
+              {/* Badges */}
+              {product.badge_text && (
+                <div className="absolute top-3 left-3">
+                  <span className="text-xs font-bold px-3 py-1.5 rounded-xl shadow text-white"
+                    style={{ background: product.badge_text === 'Hot' ? '#EF4444' : product.badge_text === 'Mới' ? '#22C55E' : '#F97316' }}>
+                    {product.badge_text}
+                  </span>
+                </div>
+              )}
+              {discount >= 10 && (
+                <div className="absolute top-3 right-3">
+                  <span className="text-sm font-black px-3 py-1.5 rounded-xl shadow"
+                    style={{ background: '#FEF9C3', color: '#854D0E' }}>
+                    -{discount}%
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Thumbnails */}
+          {images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {images.map((img, i) => (
+                <button key={img.id} onClick={() => setActiveImage(i)}
+                  className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all"
+                  style={{ borderColor: activeImage === i ? '#2563EB' : '#E2E8F0' }}>
+                  <img src={img.image_url} alt={img.alt_text ?? product.name}
+                    className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 mt-2">
             {[
-              { icon: <Zap size={18} className="text-blue-600" />, label: 'Giao tức thì', sub: 'Sau thanh toán' },
-              { icon: <Shield size={18} className="text-green-600" />, label: 'Bảo hành', sub: 'Đăng nhập lần đầu' },
-              { icon: <Phone size={18} className="text-purple-600" />, label: 'Hỗ trợ', sub: 'Zalo 8:00–22:00' },
+              { icon: <Zap size={16} />, title: 'Giao tức thì', sub: 'Sau thanh toán', color: '#2563EB', bg: '#EFF6FF' },
+              { icon: <Shield size={16} />, title: 'Bảo hành', sub: 'Đăng nhập lần đầu', color: '#16A34A', bg: '#F0FDF4' },
+              { icon: <Clock size={16} />, title: 'Hỗ trợ', sub: 'Zalo 8:00–22:00', color: '#D97706', bg: '#FFFBEB' },
             ].map(item => (
-              <div key={item.label}
-                className="flex flex-col items-center text-center p-3 rounded-2xl border"
-                style={{ borderColor: '#E2E8F0', background: 'white' }}>
-                {item.icon}
-                <p className="text-xs font-bold text-slate-800 mt-1.5">{item.label}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{item.sub}</p>
+              <div key={item.title} className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border text-center"
+                style={{ background: item.bg, borderColor: item.bg }}>
+                <div style={{ color: item.color }}>{item.icon}</div>
+                <p className="text-xs font-bold" style={{ color: item.color }}>{item.title}</p>
+                <p className="text-xs text-slate-500">{item.sub}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Right: Info + Purchase */}
-        <div className="flex flex-col gap-5">
-          {/* Category */}
+        {/* RIGHT: Info */}
+        <div className="space-y-5">
+
+          {/* Category + title */}
           {product.categories && (
             <Link href={`/shop?category=${product.categories.slug}`}
-              className="inline-flex items-center gap-1.5 text-sm font-bold w-fit px-3 py-1.5 rounded-full transition-all"
+              className="inline-flex items-center text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all"
               style={{ background: '#EFF6FF', color: '#2563EB' }}>
-              {product.categories.name} →
+              {product.categories.name}
             </Link>
           )}
 
-          {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight"
-            style={{ fontFamily: 'Sora, sans-serif' }}>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
             {product.name}
           </h1>
 
-          {/* Short desc */}
-          {product.short_description && (
-            <p className="text-slate-500 leading-relaxed">{product.short_description}</p>
+          {/* Rating */}
+          {reviews.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[1,2,3,4,5].map(s => (
+                  <Star key={s} size={16} fill={s <= Math.round(avgRating) ? '#F59E0B' : 'none'}
+                    style={{ color: '#F59E0B' }} />
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-slate-700">{avgRating.toFixed(1)}</span>
+              <span className="text-sm text-slate-400">({reviews.length} đánh giá)</span>
+            </div>
           )}
 
           {/* Price */}
-          <div className="flex items-end gap-3 flex-wrap">
-            <span className="text-4xl font-black" style={{ color: '#2563EB' }}>
+          <div className="flex items-end gap-3 py-4 border-y border-slate-100">
+            <span className="text-3xl md:text-4xl font-black" style={{ color: '#2563EB' }}>
               {formatPrice(price)}
             </span>
             {compareAt && compareAt > price && (
               <>
-                <span className="text-xl text-slate-400 line-through mb-1">{formatPrice(compareAt)}</span>
-                <span className="mb-1 text-sm font-bold px-2.5 py-1 rounded-xl"
+                <span className="text-lg text-slate-400 line-through mb-1">{formatPrice(compareAt)}</span>
+                <span className="mb-1 px-2.5 py-1 rounded-lg text-sm font-bold"
                   style={{ background: '#FEE2E2', color: '#991B1B' }}>
                   Tiết kiệm {formatPrice(compareAt - price)}
                 </span>
@@ -259,162 +199,238 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
+          {/* Short desc */}
+          {product.short_description && (
+            <p className="text-slate-600 leading-relaxed">{product.short_description}</p>
+          )}
+
           {/* Variants */}
           {product.product_variants && product.product_variants.length > 0 && (
             <div>
-              <p className="text-sm font-bold text-slate-700 mb-2.5">
-                {product.product_variants[0]?.name ?? 'Biến thể'}:
+              <p className="text-sm font-bold text-slate-700 mb-2">
+                Chọn gói:
               </p>
               <div className="flex flex-wrap gap-2">
-                {product.product_variants.map(variant => (
-                  <button
-                    key={variant.id}
-                    onClick={() => setSelectedVariant(variant)}
-                    disabled={variant.stock === 0}
-                    className={cn(
-                      'px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all',
-                      variant.stock === 0 && 'opacity-40 cursor-not-allowed line-through'
-                    )}
+                {product.product_variants.map(v => (
+                  <button key={v.id} onClick={() => setSelectedVariantId(v.id)}
+                    disabled={v.stock === 0}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all disabled:opacity-40"
                     style={{
-                      borderColor: selectedVariant?.id === variant.id ? '#2563EB' : '#E2E8F0',
-                      background: selectedVariant?.id === variant.id ? '#EFF6FF' : 'white',
-                      color: selectedVariant?.id === variant.id ? '#1D4ED8' : '#374151',
-                    }}
-                  >
-                    {variant.option_value}
-                    {variant.price && variant.price !== product.price && (
-                      <span className="ml-1.5 text-xs opacity-70">— {formatPrice(variant.price)}</span>
-                    )}
+                      borderColor: selectedVariantId === v.id ? '#2563EB' : '#E2E8F0',
+                      background: selectedVariantId === v.id ? '#EFF6FF' : 'white',
+                      color: selectedVariantId === v.id ? '#1D4ED8' : '#475569',
+                    }}>
+                    {v.option_value}
+                    {v.price && <span className="ml-1.5 opacity-70">{formatPrice(v.price)}</span>}
+                    {v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Quantity */}
-          <div>
-            <p className="text-sm font-bold text-slate-700 mb-2.5">Số lượng:</p>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center rounded-xl border-2 overflow-hidden" style={{ borderColor: '#E2E8F0' }}>
-                <button
-                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                  className="px-3 py-2.5 hover:bg-slate-50 transition-colors"
-                >
-                  <Minus size={16} className="text-slate-600" />
-                </button>
-                <span className="w-12 text-center font-bold text-slate-900">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(q => q + 1)}
-                  className="px-3 py-2.5 hover:bg-slate-50 transition-colors"
-                >
-                  <Plus size={16} className="text-slate-600" />
-                </button>
-              </div>
-              <span className={cn('text-sm font-semibold flex items-center gap-1.5',
-                isOutOfStock ? 'text-red-500' : 'text-green-600')}>
-                {isOutOfStock ? (
-                  '❌ Hết hàng'
-                ) : (
-                  <>
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                    </span>
-                    Còn {selectedVariant ? selectedVariant.stock : product.stock} sản phẩm
-                  </>
-                )}
-              </span>
-            </div>
-          </div>
-
           {/* Upgrade email */}
-          {needsEmail && (
+          {needsUpgradeEmail && (
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">
                 📧 Email nâng cấp chính chủ
               </label>
-              <input
-                type="email"
-                value={upgradeEmail}
+              <input type="email" value={upgradeEmail}
                 onChange={e => setUpgradeEmail(e.target.value)}
                 placeholder="Nhập email bạn muốn nâng cấp..."
-                className="input"
-              />
-              <p className="text-xs mt-1.5" style={{ color: '#94A3B8' }}>
-                💡 Bỏ qua nếu bạn chọn gói cấp sẵn — tài khoản sẽ được gửi sau thanh toán
+                className="input" />
+              <p className="text-xs text-slate-400 mt-1.5">
+                💡 Bỏ qua nếu bạn chọn gói cấp sẵn
               </p>
             </div>
           )}
 
+          {/* Quantity */}
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-bold text-slate-700">Số lượng:</p>
+            <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden">
+              <button onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 transition-colors text-slate-600 font-bold">
+                −
+              </button>
+              <span className="w-12 text-center font-bold text-slate-900">{quantity}</span>
+              <button onClick={() => setQuantity(q => Math.min(stock, q + 1))}
+                className="w-10 h-10 flex items-center justify-center hover:bg-slate-50 transition-colors text-slate-600 font-bold">
+                +
+              </button>
+            </div>
+            <span className="text-sm font-semibold"
+              style={{ color: stock > 5 ? '#16A34A' : stock > 0 ? '#D97706' : '#EF4444' }}>
+              {isOutOfStock ? '● Hết hàng' : stock > 5 ? `● Còn ${stock} sản phẩm` : `● Chỉ còn ${stock}`}
+            </span>
+          </div>
+
           {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-1">
-            <button
-              onClick={handleBuyNow}
-              disabled={isOutOfStock}
-              className="btn-primary py-3.5 text-base flex-1 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+          <div className="flex gap-3">
+            <button onClick={handleBuyNow} disabled={isOutOfStock}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base text-white disabled:opacity-50 transition-all"
+              style={{ background: isOutOfStock ? '#94A3B8' : 'linear-gradient(135deg, #2563EB, #1d4ed8)', boxShadow: '0 4px 16px rgba(37,99,235,0.3)' }}>
               <Zap size={18} /> Mua Ngay
             </button>
-            <button
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              className="btn-secondary py-3.5 text-base flex-1 justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <button onClick={handleAddToCart} disabled={isOutOfStock}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base border-2 disabled:opacity-50 transition-all hover:bg-blue-50"
+              style={{ borderColor: '#2563EB', color: '#2563EB' }}>
               <ShoppingCart size={18} /> Thêm Vào Giỏ
             </button>
           </div>
 
-          {/* Features */}
-          <div className="grid grid-cols-2 gap-2 p-4 rounded-2xl" style={{ background: '#F8FAFC' }}>
-            {[
-              'Giao hàng tự động', 'Bảo hành đăng nhập',
-              'Tài khoản riêng tư', 'Hỗ trợ Zalo 24/7',
-            ].map(f => (
-              <div key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                <Check size={14} className="text-green-500 flex-shrink-0" />
-                {f}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="rounded-3xl border overflow-hidden" style={{ borderColor: '#E2E8F0', background: 'white' }}>
-        {/* Tab headers */}
-        <div className="flex overflow-x-auto border-b" style={{ borderColor: '#F1F5F9' }}>
-          {TABS.map(tab => {
-            const hasContent = !!tabContent[tab.id]
-            if (!hasContent) return null
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="flex-shrink-0 px-6 py-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap"
-                style={{
-                  borderColor: activeTab === tab.id ? '#2563EB' : 'transparent',
-                  color: activeTab === tab.id ? '#1D4ED8' : '#64748B',
-                  background: activeTab === tab.id ? '#F8FAFC' : 'transparent',
-                }}
-              >
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Tab content */}
-        <div className="p-6 md:p-8">
-          {tabContent[activeTab] ? (
-            <div
-              className="product-content max-w-3xl"
-              dangerouslySetInnerHTML={{ __html: tabContent[activeTab]! }}
-            />
-          ) : (
-            <p className="text-sm" style={{ color: '#94A3B8' }}>Chưa có nội dung</p>
+          {/* Total price */}
+          {quantity > 1 && (
+            <div className="p-3 rounded-xl text-sm font-semibold text-center"
+              style={{ background: '#EFF6FF', color: '#1D4ED8' }}>
+              Tổng: {formatPrice(price * quantity)}
+            </div>
           )}
         </div>
       </div>
+
+      {/* TABS: Mô Tả + Đánh Giá */}
+      <div className="border-b border-slate-200 mb-8 flex gap-1 overflow-x-auto">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+            className="flex-shrink-0 px-6 py-3.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap"
+            style={{
+              borderColor: activeTab === tab.id ? '#2563EB' : 'transparent',
+              color: activeTab === tab.id ? '#1D4ED8' : '#64748B',
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab: Mô Tả */}
+      {activeTab === 'description' && (
+        <div className="space-y-8">
+          {product.description_html && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+              <h2 className="text-lg font-black text-slate-900 mb-5 flex items-center gap-2">
+                <span className="text-xl">📋</span> Mô Tả Chi Tiết
+              </h2>
+              <div className="product-content"
+                dangerouslySetInnerHTML={{ __html: product.description_html }} />
+            </div>
+          )}
+
+          {product.usage_guide_html && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+              <h2 className="text-lg font-black text-slate-900 mb-5 flex items-center gap-2">
+                <span className="text-xl">📖</span> Hướng Dẫn Sử Dụng
+              </h2>
+              <div className="product-content"
+                dangerouslySetInnerHTML={{ __html: product.usage_guide_html }} />
+            </div>
+          )}
+
+          {product.warranty_html && (
+            <div className="rounded-2xl border p-6 md:p-8"
+              style={{ background: '#F0FDF4', borderColor: '#BBF7D0' }}>
+              <h2 className="text-lg font-black mb-5 flex items-center gap-2"
+                style={{ color: '#166534' }}>
+                <span className="text-xl">🛡️</span> Chính Sách Bảo Hành
+              </h2>
+              <div className="product-content"
+                dangerouslySetInnerHTML={{ __html: product.warranty_html }} />
+            </div>
+          )}
+
+          {product.faq_html && (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8">
+              <h2 className="text-lg font-black text-slate-900 mb-5 flex items-center gap-2">
+                <span className="text-xl">❓</span> Câu Hỏi Thường Gặp
+              </h2>
+              <div className="product-content"
+                dangerouslySetInnerHTML={{ __html: product.faq_html }} />
+            </div>
+          )}
+
+          {!product.description_html && !product.usage_guide_html && !product.warranty_html && !product.faq_html && (
+            <div className="text-center py-16 text-slate-400">
+              <p>Chưa có nội dung mô tả</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Đánh Giá */}
+      {activeTab === 'reviews' && (
+        <div>
+          {reviews.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-5xl mb-4">⭐</div>
+              <p className="text-slate-400">Chưa có đánh giá nào</p>
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {/* Rating summary */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center gap-8">
+                <div className="text-center flex-shrink-0">
+                  <p className="text-5xl font-black" style={{ color: '#F59E0B' }}>
+                    {avgRating.toFixed(1)}
+                  </p>
+                  <div className="flex justify-center mt-1">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} size={16} fill={s <= Math.round(avgRating) ? '#F59E0B' : 'none'}
+                        style={{ color: '#F59E0B' }} />
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">{reviews.length} đánh giá</p>
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  {[5,4,3,2,1].map(star => {
+                    const count = reviews.filter(r => r.rating === star).length
+                    const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0
+                    return (
+                      <div key={star} className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 w-4">{star}</span>
+                        <Star size={12} fill="#F59E0B" style={{ color: '#F59E0B' }} />
+                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
+                          <div className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, background: '#F59E0B' }} />
+                        </div>
+                        <span className="text-xs text-slate-400 w-6">{count}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Review list */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {reviews.map(review => (
+                  <div key={review.id} className="bg-white rounded-2xl border border-slate-200 p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
+                        {review.reviewer_avatar
+                          ? <img src={review.reviewer_avatar} alt={review.reviewer_name} className="w-full h-full object-cover rounded-full" />
+                          : review.reviewer_name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">{review.reviewer_name}</p>
+                        <div className="flex">
+                          {[1,2,3,4,5].map(s => (
+                            <Star key={s} size={12} fill={s <= review.rating ? '#F59E0B' : 'none'}
+                              style={{ color: '#F59E0B' }} />
+                          ))}
+                        </div>
+                      </div>
+                      <span className="ml-auto text-xs text-slate-400">
+                        {new Date(review.created_at).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed">{review.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
