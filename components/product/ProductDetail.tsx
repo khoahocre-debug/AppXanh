@@ -221,8 +221,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
                       color: selectedVariantId === v.id ? '#1D4ED8' : '#475569',
                     }}>
                     {v.option_value}
-                    {v.price && <span className="ml-1.5 opacity-70">{formatPrice(v.price)}</span>}
-                    {v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
+{v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
                   </button>
                 ))}
               </div>
