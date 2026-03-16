@@ -260,10 +260,21 @@ export default function CheckoutPage() {
                   const price = item.variant?.price ?? item.product.price
                   return (
                     <div key={`${item.productId}-${item.variantId}`} className="flex gap-3">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #EFF6FF, #E0F2FE)' }}>
-                        🤖
-                      </div>
+                      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
+  {item.product.product_images && item.product.product_images.length > 0 ? (
+    <img
+      src={item.product.product_images.find((img: any) => img.sort_order === 0)?.image_url
+        ?? item.product.product_images[0]?.image_url}
+      alt={item.product.name}
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center text-xl"
+      style={{ background: 'linear-gradient(135deg, #EFF6FF, #E0F2FE)' }}>
+      🤖
+    </div>
+  )}
+</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-slate-900 line-clamp-2 leading-tight">
                           {item.product.name}
