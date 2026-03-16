@@ -1,469 +1,532 @@
+import { createClient } from '@/lib/supabase/server'
+import { formatPrice, discountPercent } from '@/lib/utils'
 import Link from 'next/link'
-import { ArrowRight, CheckCircle2, Star, Zap, Shield, HeadphonesIcon, TrendingDown, Clock, Award } from 'lucide-react'
 
-const PRODUCTS = [
-  { name: 'ChatGPT Plus Business', price: '99.000đ', original: '620.000đ', discount: 84, badge: '🔥 Hot', category: 'AI Chatbot', emoji: '🤖', slug: 'chatgpt-plus-business', desc: 'GPT-5.2 đầy đủ, DALL-E, Sora, AI Agent' },
-  { name: 'Claude Pro 1 Tháng', price: '350.000đ', original: '620.000đ', discount: 43, badge: '⭐ Mới', category: 'AI Chatbot', emoji: '🧠', slug: 'claude-pro-1-thang', desc: 'Claude 4.5, nâng cấp chính chủ trên email của bạn' },
-  { name: 'YouTube Premium 1 Năm', price: '500.000đ', original: '900.000đ', discount: 44, badge: '🎬 Hot', category: 'Giải Trí', emoji: '▶️', slug: 'youtube-premium-1-nam', desc: 'Xem không quảng cáo, YouTube Music, tải offline' },
-  { name: 'ChatGPT Go 1 Năm', price: '200.000đ', original: '1.600.000đ', discount: 87, badge: '💰 Rẻ nhất', category: 'AI Chatbot', emoji: '🤖', slug: 'chatgpt-go-1-nam', desc: 'Email riêng tư, Thinking cơ bản, duyệt web' },
-  { name: 'Canva Pro 1 Năm', price: '150.000đ', original: '1.400.000đ', discount: 89, badge: '🎨 Bán chạy', category: 'Thiết Kế', emoji: '🎨', slug: 'canva-pro-1-nam', desc: '100M+ template, xóa nền, Magic AI đầy đủ' },
-  { name: 'GitHub Copilot Pro', price: '180.000đ', original: '400.000đ', discount: 55, badge: '💻 Dev', category: 'Công Cụ Dev', emoji: '💻', slug: 'github-copilot-pro-1-thang', desc: 'AI code completion, chat trong IDE' },
-]
+export default async function HomePage() {
+  const supabase = await createClient()
+  const { data: products } = await supabase
+    .from('products')
+    .select(`*, categories(*), product_variants(*), product_images(*)`)
+    .eq('status', 'active')
+    .eq('featured', true)
+    .order('created_at', { ascending: false })
+    .limit(6)
 
-const CATEGORIES = [
-  { name: 'AI Chatbot', emoji: '🤖', count: 12, color: 'from-blue-500 to-blue-600', slug: 'ai-chatbot' },
-  { name: 'Thiết Kế', emoji: '🎨', count: 8, color: 'from-purple-500 to-purple-600', slug: 'thiet-ke' },
-  { name: 'Video & Nhạc', emoji: '🎬', count: 6, color: 'from-red-500 to-red-600', slug: 'video-am-nhac' },
-  { name: 'Học Tập', emoji: '📚', count: 10, color: 'from-green-500 to-green-600', slug: 'hoc-tap' },
-  { name: 'Giải Trí', emoji: '🎵', count: 7, color: 'from-yellow-500 to-orange-500', slug: 'giai-tri' },
-  { name: 'Công Cụ Dev', emoji: '💻', count: 9, color: 'from-cyan-500 to-cyan-600', slug: 'cong-cu-dev' },
-]
+  const { data: allProducts } = await supabase
+    .from('products')
+    .select(`*, product_images(*)`)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(3)
 
-const REVIEWS = [
-  { name: 'Minh Tuấn', avatar: '👨‍💻', rating: 5, text: 'Mua ChatGPT Plus ở đây rẻ hơn nhiều so với mua trực tiếp. Giao hàng cực nhanh, chỉ vài phút là có tài khoản!', product: 'ChatGPT Plus Business' },
-  { name: 'Thanh Hà', avatar: '👩‍🎨', rating: 5, text: 'Canva Pro giá chỉ 150k mà dùng được cả năm, quá xịn! Shop hỗ trợ tận tình qua Zalo khi có thắc mắc.', product: 'Canva Pro 1 Năm' },
-  { name: 'Hoàng Long', avatar: '👨‍🏫', rating: 5, text: 'YouTube Premium không quảng cáo nghe nhạc thoải mái. Đã mua lần 2 rồi, uy tín lắm!', product: 'YouTube Premium' },
-  { name: 'Thu Phương', avatar: '👩‍💼', rating: 5, text: 'Claude Pro code đỉnh hơn ChatGPT nhiều. Shop nâng cấp lên email mình luôn, không phải dùng chung với ai.', product: 'Claude Pro' },
-]
-
-export default function HomePage() {
   return (
-    <>
-      {/* ═══════════════════════════════════
-          HERO SECTION
-      ═══════════════════════════════════ */}
-      <section className="relative overflow-hidden py-20 md:py-28 px-4"
-        style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 30%, #f0fdf4 70%, #f8fafc 100%)' }}>
+    <div className="overflow-x-hidden">
+      <HeroSection featuredProducts={allProducts ?? []} />
+      <StatsSection />
+      <FeaturedProducts products={products ?? []} />
+      <HowItWorksSection />
+      <ReviewsSection />
+      <CtaSection />
+    </div>
+  )
+}
 
-        {/* Decorative blobs */}
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-30 blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #3b82f6, transparent)' }} />
-        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #06b6d4, transparent)' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10 blur-3xl pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)' }} />
+// ── Hero ──────────────────────────────────────────────────
+function HeroSection({ featuredProducts }: { featuredProducts: any[] }) {
+  const heroCards = [
+    {
+      name: 'ChatGPT Plus Business',
+      sub: 'GPT-5.2 · DALL-E · Sora',
+      price: 99000,
+      oldPrice: 620000,
+      logo: (
+        <svg viewBox="0 0 41 41" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
+          <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.078 10.078 0 0 0-10.855-4.835 9.964 9.964 0 0 0-6.239-3.746 10.078 10.078 0 0 0-9.413 3.632 9.963 9.963 0 0 0-3.735 6.176A10.078 10.078 0 0 0 .908 20.07a9.963 9.963 0 0 0 .856 8.185 10.078 10.078 0 0 0 10.855 4.835 9.964 9.964 0 0 0 6.239 3.746 10.078 10.078 0 0 0 9.414-3.632 9.963 9.963 0 0 0 3.734-6.176 10.078 10.078 0 0 0-4.474-10.158zM22.016 37.422a7.474 7.474 0 0 1-4.799-1.735c.061-.033.168-.091.237-.134l7.964-4.6a1.294 1.294 0 0 0 .655-1.134V19.054l3.366 1.944a.12.12 0 0 1 .066.092v9.299a7.505 7.505 0 0 1-7.49 7.033zM6.1 31.14a7.471 7.471 0 0 1-.894-5.023c.06.036.162.099.237.141l7.964 4.6a1.297 1.297 0 0 0 1.308 0l9.724-5.614v3.888a.12.12 0 0 1-.048.103L16.323 34.2A7.505 7.505 0 0 1 6.1 31.14zm-1.986-16.32A7.474 7.474 0 0 1 8.023 10.8c0 .068-.004.19-.004.274v9.201a1.294 1.294 0 0 0 .654 1.132l9.723 5.614-3.366 1.944a.12.12 0 0 1-.114.012L7.044 24.3a7.504 7.504 0 0 1-2.93-9.48zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 0 1 .114-.012l7.872 4.547a7.505 7.505 0 0 1-1.158 13.528v-9.476a1.293 1.293 0 0 0-.471-1.029zm3.35-5.043c-.059-.037-.162-.099-.236-.141l-7.965-4.6a1.298 1.298 0 0 0-1.308 0l-9.723 5.614v-3.888a.12.12 0 0 1 .048-.103l7.867-4.542a7.505 7.505 0 0 1 11.317 7.66zm-21.063 6.929l-3.367-1.944a.12.12 0 0 1-.065-.092v-9.299a7.505 7.505 0 0 1 12.293-5.756 6.94 6.94 0 0 0-.236.134l-7.965 4.6a1.294 1.294 0 0 0-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.497v4.998l-4.331 2.5-4.331-2.5z" fill="currentColor"/>
+        </svg>
+      ),
+      color: '#10A37F', bg: '#E8F7F3',
+    },
+    {
+      name: 'YouTube Premium 1 Năm',
+      sub: 'Không quảng cáo',
+      price: 500000,
+      oldPrice: 900000,
+      logo: (
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#FF0000"/>
+        </svg>
+      ),
+      color: '#FF0000', bg: '#FFF0F0',
+    },
+    {
+      name: 'Canva Pro 1 Năm',
+      sub: '100M+ templates',
+      price: 150000,
+      oldPrice: 1400000,
+      logo: (
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-.55 16.742c-.606 0-1.162-.098-1.669-.294-.507-.196-.944-.482-1.313-.857-.368-.375-.655-.83-.862-1.366C7.4 13.69 7.3 13.088 7.3 12.42c0-.668.1-1.27.3-1.806.2-.536.486-.991.857-1.366.37-.375.81-.661 1.318-.857.508-.196 1.063-.294 1.668-.294.438 0 .85.06 1.238.18.388.12.735.29 1.04.513.308.222.558.49.75.806.194.315.316.67.37 1.062h-1.73c-.064-.375-.23-.664-.5-.866-.27-.202-.613-.303-1.03-.303-.293 0-.558.052-.794.156-.235.104-.436.254-.604.45-.167.196-.297.436-.387.72-.09.284-.135.606-.135.966 0 .365.046.692.135.98.09.287.22.531.387.732.167.2.37.354.604.46.236.105.5.157.794.157.44 0 .8-.112 1.08-.337.28-.225.452-.534.518-.927h1.73c-.056.395-.177.747-.363 1.057-.186.31-.43.572-.73.787-.3.214-.645.378-1.032.49-.388.112-.81.168-1.264.168zm6.54-.12h-1.72V9.35h1.72v7.272zm-.86-8.4c-.284 0-.516-.093-.698-.279-.182-.185-.273-.413-.273-.682 0-.27.09-.497.273-.683.182-.186.414-.279.698-.279s.516.093.698.279c.182.186.273.413.273.683 0 .269-.09.497-.273.682-.182.186-.414.28-.698.28z" fill="#7D2AE8"/>
+        </svg>
+      ),
+      color: '#7D2AE8', bg: '#F3EEFF',
+    },
+  ]
 
-        <div className="relative max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+  return (
+    <section className="relative min-h-screen flex items-center overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #f0fdf4 100%)' }}>
 
-            {/* Left text */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold"
-                style={{ background: '#dbeafe', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
-                <span className="w-2 h-2 bg-green-500 rounded-full" style={{ animation: 'pulse 2s infinite' }} />
-                Giao hàng tự động 24/7 — Không cần chờ đợi
-              </div>
+      {/* Background blobs */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #3B82F6, transparent)' }} />
+        <div className="absolute bottom-20 right-1/4 w-80 h-80 rounded-full opacity-15 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
+        <div className="absolute top-1/2 left-10 w-64 h-64 rounded-full opacity-10 blur-3xl"
+          style={{ background: 'radial-gradient(circle, #818CF8, transparent)' }} />
+      </div>
 
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-[1.1] mb-6"
-                style={{ color: '#0f172a', fontFamily: 'Sora, sans-serif' }}>
-                Tài khoản số
-                <br />
-                <span className="gradient-text">giá xanh</span>
-                <br />
-                <span style={{ fontSize: '0.85em' }}>dùng ổn định</span>
-              </h1>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-20 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
-              <p className="text-lg text-slate-500 mb-8 leading-relaxed max-w-lg">
-                Mua <strong>ChatGPT Plus, Claude Pro, Canva, YouTube Premium</strong> và 100+ app premium khác.
-                Giá rẻ hơn đến <strong className="text-blue-600">90%</strong> so với mua trực tiếp. Bảo hành tận tâm.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-3 mb-10">
-                <Link href="/shop" className="btn-primary text-base px-8 py-4">
-                  Xem Tất Cả Sản Phẩm <ArrowRight size={18} />
-                </Link>
-                <a href="https://zalo.me/0888993991" className="btn-outline text-base px-8 py-4">
-                  💬 Tư Vấn Zalo
-                </a>
-              </div>
-
-              {/* Trust indicators */}
-              <div className="flex flex-wrap gap-4">
-                {[
-                  { icon: '✅', text: 'Bảo hành đăng nhập' },
-                  { icon: '⚡', text: 'Giao trong 5 phút' },
-                  { icon: '🔒', text: 'Tài khoản riêng tư' },
-                ].map(item => (
-                  <div key={item.text} className="flex items-center gap-1.5 text-sm text-slate-600 font-medium">
-                    <span>{item.icon}</span> {item.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: floating product cards */}
-            <div className="hidden lg:block relative h-[420px]">
-              {/* Main card */}
-              <div className="absolute top-0 right-0 w-72 card p-5 shadow-xl"
-                style={{ transform: 'rotate(2deg)' }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
-                    style={{ background: 'linear-gradient(135deg, #dbeafe, #e0f2fe)' }}>🤖</div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-sm">ChatGPT Plus Business</p>
-                    <p className="text-xs text-slate-500">GPT-5.2 · DALL-E · Sora</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xl font-black text-blue-700">99.000đ</span>
-                    <span className="text-xs text-slate-400 line-through ml-2">620.000đ</span>
-                  </div>
-                  <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: '#fee2e2', color: '#991b1b' }}>-84%</span>
-                </div>
-              </div>
-
-              {/* Second card */}
-              <div className="absolute top-32 left-0 w-64 card p-4 shadow-lg"
-                style={{ transform: 'rotate(-2deg)' }}>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                    style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>▶️</div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-xs">YouTube Premium 1 Năm</p>
-                    <p className="text-xs text-slate-500">Không quảng cáo</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black text-blue-700">500.000đ</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{ background: '#dcfce7', color: '#166534' }}>-44%</span>
-                </div>
-              </div>
-
-              {/* Third card */}
-              <div className="absolute bottom-10 right-10 w-60 card p-4 shadow-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                    style={{ background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)' }}>🎨</div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-xs">Canva Pro 1 Năm</p>
-                    <p className="text-xs text-slate-500">100M+ templates</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black text-blue-700">150.000đ</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{ background: '#fee2e2', color: '#991b1b' }}>-89%</span>
-                </div>
-              </div>
-
-              {/* Floating badge */}
-              <div className="absolute top-48 right-8 px-3 py-2 rounded-2xl shadow-lg text-sm font-bold"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #06b6d4)', color: 'white', animation: 'float 3s ease-in-out infinite' }}>
-                ⚡ Giao ngay!
-              </div>
-            </div>
-          </div>
-
-          {/* Stats bar */}
-          <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { value: '5,000+', label: 'Khách hàng tin tưởng', icon: '👥' },
-              { value: '100+', label: 'Sản phẩm premium', icon: '📦' },
-              { value: '99%', label: 'Khách hàng hài lòng', icon: '⭐' },
-              { value: '< 5 phút', label: 'Thời gian giao hàng', icon: '⚡' },
-            ].map(stat => (
-              <div key={stat.label} className="card p-4 text-center">
-                <div className="text-2xl mb-1">{stat.icon}</div>
-                <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════
-          CATEGORIES
-      ═══════════════════════════════════ */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
-        <div className="flex items-end justify-between mb-8">
+          {/* Left */}
           <div>
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2">Danh Mục</p>
-            <h2 className="text-3xl font-black text-slate-900">Tìm theo loại sản phẩm</h2>
-          </div>
-          <Link href="/shop" className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
-            Xem tất cả <ArrowRight size={14} />
-          </Link>
-        </div>
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold mb-6 border"
+              style={{ background: 'rgba(255,255,255,0.8)', borderColor: '#BFDBFE', color: '#1D4ED8' }}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#22C55E' }} />
+                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: '#22C55E' }} />
+              </span>
+              Giao hàng tự động 24/7 — Không cần chờ đợi
+            </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {CATEGORIES.map(cat => (
-            <Link key={cat.slug} href={`/shop?category=${cat.slug}`}
-              className="group card-hover p-5 flex flex-col items-center text-center gap-3 cursor-pointer">
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-3xl shadow-sm group-hover:scale-110 transition-transform duration-200`}>
-                {cat.emoji}
+            {/* Title */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-tight mb-6">
+              Kho Tài Khoản<br />
+              Premium{' '}
+              <span className="gradient-text">Giá Xanh</span>
+            </h1>
+
+            {/* Feature pills */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {[
+                { icon: '✓', text: 'Tài Khoản Ổn Định' },
+                { icon: '⚡', text: 'Thanh toán có liền' },
+                { icon: '🛡️', text: 'Bảo hành trọn gói' },
+              ].map(item => (
+                <span key={item.text}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border"
+                  style={{ background: 'rgba(255,255,255,0.9)', borderColor: '#E2E8F0', color: '#1E293B' }}>
+                  <span>{item.icon}</span> {item.text}
+                </span>
+              ))}
+            </div>
+
+            <p className="text-slate-600 text-lg leading-relaxed mb-8">
+              Mua <strong>ChatGPT Plus, Claude Pro, Canva, YouTube Premium</strong> và 100+ app premium khác.
+              Giá rẻ hơn đến <strong className="text-blue-600">90%</strong> so với mua trực tiếp.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/shop"
+                className="btn-primary py-4 px-8 text-base justify-center"
+                style={{ boxShadow: '0 8px 24px rgba(37,99,235,0.35)' }}>
+                Xem Tất Cả Sản Phẩm →
+              </Link>
+              <a href="https://zalo.me/0888993991" target="_blank"
+                className="btn-outline py-4 px-8 text-base justify-center">
+                💬 Tư Vấn Zalo
+              </a>
+            </div>
+
+            {/* Trust row */}
+            <div className="flex flex-wrap items-center gap-4 mt-8 pt-8 border-t border-slate-200">
+              {[
+                { icon: '✅', text: 'Bảo hành đăng nhập' },
+                { icon: '⚡', text: 'Giao trong 5 phút' },
+                { icon: '🔒', text: 'Tài khoản riêng tư' },
+              ].map(item => (
+                <div key={item.text} className="flex items-center gap-1.5 text-sm text-slate-600 font-medium">
+                  <span>{item.icon}</span> {item.text}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: floating product cards */}
+          <div className="relative h-96 lg:h-auto hidden lg:block">
+            <div className="relative w-full h-[480px]">
+              {heroCards.map((card, i) => (
+                <div key={card.name}
+                  className="absolute bg-white rounded-2xl shadow-xl border border-slate-100 p-4 w-64"
+                  style={{
+                    top: i === 0 ? '0%' : i === 1 ? '35%' : '68%',
+                    left: i === 0 ? '30%' : i === 1 ? '0%' : '35%',
+                    animation: `float ${3 + i * 0.7}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.5}s`,
+                    zIndex: 3 - i,
+                  }}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: card.bg, color: card.color }}>
+                      {card.logo}
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm leading-tight">{card.name}</p>
+                      <p className="text-xs text-slate-400">{card.sub}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-lg font-black" style={{ color: '#2563EB' }}>
+                        {formatPrice(card.price)}
+                      </span>
+                      <span className="text-xs text-slate-400 line-through ml-2">
+                        {formatPrice(card.oldPrice)}
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold px-2 py-1 rounded-lg"
+                      style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                      -{discountPercent(card.price, card.oldPrice)}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {/* Giao ngay button */}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 z-10"
+                style={{ animation: 'float 2.5s ease-in-out infinite' }}>
+                <div className="bg-blue-600 text-white px-5 py-3 rounded-2xl font-bold shadow-xl text-sm flex items-center gap-2">
+                  ⚡ Giao ngay!
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cat.name}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{cat.count} sản phẩm</p>
-              </div>
-            </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function StatsSection() {
+  const stats = [
+    { value: '1,200+', label: 'Khách hàng tin dùng', icon: '👥' },
+    { value: '50+', label: 'Sản phẩm premium', icon: '📦' },
+    { value: '99%', label: 'Tỷ lệ hài lòng', icon: '⭐' },
+    { value: '< 5 phút', label: 'Thời gian giao hàng', icon: '⚡' },
+  ]
+  return (
+    <section className="py-12 border-y border-slate-200" style={{ background: 'white' }}>
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map(stat => (
+            <div key={stat.label} className="text-center">
+              <div className="text-3xl mb-1">{stat.icon}</div>
+              <p className="text-2xl md:text-3xl font-black text-slate-900">{stat.value}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{stat.label}</p>
+            </div>
           ))}
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* ═══════════════════════════════════
-          FEATURED PRODUCTS
-      ═══════════════════════════════════ */}
-      <section className="max-w-7xl mx-auto px-4 md:px-8 pb-16">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2">Nổi Bật</p>
-            <h2 className="text-3xl font-black text-slate-900">Sản phẩm bán chạy nhất</h2>
-          </div>
-          <Link href="/shop" className="text-sm text-blue-600 font-semibold flex items-center gap-1 hover:gap-2 transition-all">
-            Xem thêm <ArrowRight size={14} />
-          </Link>
+// ── Featured Products ─────────────────────────────────────
+function FeaturedProducts({ products }: { products: any[] }) {
+  if (products.length === 0) return null
+
+  return (
+    <section className="py-16 md:py-20" style={{ background: '#F8FAFC' }}>
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <div className="text-center mb-10">
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#2563EB' }}>
+            Sản Phẩm Nổi Bật
+          </p>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+            Được Mua Nhiều Nhất
+          </h2>
+          <p className="text-slate-500 mt-2">Chất lượng đảm bảo, giá tốt nhất thị trường</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PRODUCTS.map(product => (
-            <Link key={product.slug} href={`/product/${product.slug}`}>
-              <div className="group card-hover h-full flex flex-col overflow-hidden cursor-pointer">
-                {/* Image area */}
-                <div className="relative h-44 flex items-center justify-center overflow-hidden"
-                  style={{ background: 'linear-gradient(135deg, #eff6ff, #e0f2fe, #f0fdf4)' }}>
-                  <span className="text-7xl group-hover:scale-110 transition-transform duration-300 animate-float">
-                    {product.emoji}
-                  </span>
-                  <div className="absolute top-3 left-3">
-                    <span className="text-xs font-bold px-2.5 py-1.5 rounded-xl shadow-sm"
-                      style={{ background: '#ef4444', color: 'white' }}>
-                      {product.badge}
-                    </span>
-                  </div>
-                  <div className="absolute top-3 right-3">
-                    <span className="text-xs font-black px-2.5 py-1.5 rounded-xl"
-                      style={{ background: '#fef9c3', color: '#854d0e' }}>
-                      -{product.discount}%
-                    </span>
+          {products.map(product => {
+            const price = product.price
+            const compareAt = product.compare_at_price
+            const discount = discountPercent(price, compareAt ?? 0)
+            const coverImage = product.product_images?.find((img: any) => img.sort_order === 0)
+              ?? product.product_images?.[0] ?? null
+
+            return (
+              <Link key={product.id} href={`/product/${product.slug}`}
+                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+
+                {/* Image 16:9 */}
+                <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                  <div className="absolute inset-0"
+                    style={{ background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe)' }}>
+                    {coverImage ? (
+                      <img src={coverImage.image_url} alt={coverImage.alt_text ?? product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-6xl opacity-30">🤖</div>
+                    )}
+                    {product.badge_text && (
+                      <div className="absolute top-3 left-3">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg text-white shadow"
+                          style={{ background: product.badge_text === 'Hot' ? '#EF4444' : product.badge_text === 'Mới' ? '#22C55E' : '#F97316' }}>
+                          {product.badge_text}
+                        </span>
+                      </div>
+                    )}
+                    {discount >= 10 && (
+                      <div className="absolute top-3 right-3">
+                        <span className="text-xs font-black px-2.5 py-1 rounded-lg"
+                          style={{ background: '#FEF9C3', color: '#854D0E' }}>
+                          -{discount}%
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex flex-col flex-1 p-5 gap-2">
-                  <span className="text-xs text-blue-600 font-semibold">{product.category}</span>
-                  <h3 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors leading-snug">
+                <div className="p-4">
+                  <p className="font-bold text-slate-900 line-clamp-2 leading-snug mb-1 group-hover:text-blue-700 transition-colors">
                     {product.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 flex-1 leading-relaxed">{product.desc}</p>
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
+                  </p>
+                  {product.short_description && (
+                    <p className="text-xs text-slate-500 line-clamp-2 mb-3">{product.short_description}</p>
+                  )}
+                  <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-xl font-black text-blue-700">{product.price}</span>
-                      <span className="text-xs text-slate-400 line-through ml-2">{product.original}</span>
+                      <span className="text-xl font-black" style={{ color: '#2563EB' }}>{formatPrice(price)}</span>
+                      {compareAt && compareAt > price && (
+                        <span className="text-xs text-slate-400 line-through ml-2">{formatPrice(compareAt)}</span>
+                      )}
                     </div>
-                    <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
-                      <Zap size={12} /> Còn hàng
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full"
+                      style={{ background: '#DCFCE7', color: '#166534' }}>
+                      ● Còn hàng
                     </span>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════
-          WHY APPXANH
-      ═══════════════════════════════════ */}
-      <section style={{ background: 'linear-gradient(135deg, #1e40af, #0891b2)' }} className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-blue-200 text-sm font-semibold uppercase tracking-wider mb-3">Tại Sao Chọn App Xanh</p>
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-              Mua app xịn, giá không xịn
-            </h2>
-            <p className="text-blue-100 max-w-xl mx-auto">
-              Hàng nghìn khách hàng đã tiết kiệm hàng triệu đồng mỗi năm khi mua qua App Xanh
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              {
-                icon: <Zap size={28} />,
-                title: 'Giao Hàng Tức Thì',
-                desc: 'Nhận tài khoản ngay sau khi admin xác nhận thanh toán. Không cần chờ đợi lâu.',
-                highlight: '< 5 phút'
-              },
-              {
-                icon: <Shield size={28} />,
-                title: 'Bảo Hành Tận Tâm',
-                desc: 'Cam kết hoàn tiền hoặc đổi tài khoản mới nếu không đăng nhập được.',
-                highlight: '100% bảo hành'
-              },
-              {
-                icon: <TrendingDown size={28} />,
-                title: 'Giá Rẻ Nhất',
-                desc: 'Tiết kiệm đến 90% so với mua trực tiếp. Cập nhật giá liên tục theo thị trường.',
-                highlight: 'Tiết kiệm 90%'
-              },
-              {
-                icon: <HeadphonesIcon size={28} />,
-                title: 'Hỗ Trợ Zalo 24/7',
-                desc: 'Đội ngũ CSKH hỗ trợ tận tình qua Zalo. Phản hồi nhanh trong giờ làm việc.',
-                highlight: '8:00 - 22:00'
-              },
-            ].map(item => (
-              <div key={item.title}
-                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}
-                className="rounded-2xl p-6">
-                <div className="text-white mb-4 opacity-90">{item.icon}</div>
-                <div className="text-xs font-bold px-2.5 py-1 rounded-full mb-3 inline-block"
-                  style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
-                  {item.highlight}
-                </div>
-                <h3 className="text-white font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-blue-100 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════
-          HOW TO BUY
-      ═══════════════════════════════════ */}
-      <section className="max-w-5xl mx-auto px-4 md:px-8 py-20">
-        <div className="text-center mb-12">
-          <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-3">Quy Trình</p>
-          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-4">
-            Mua hàng siêu đơn giản
-          </h2>
-          <p className="text-slate-500 max-w-lg mx-auto">
-            Chỉ 3 bước là bạn đã có ngay tài khoản premium với giá cực rẻ
-          </p>
+              </Link>
+            )
+          })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-          {/* Connector line */}
-          <div className="hidden md:block absolute top-12 left-1/4 right-1/4 h-0.5"
-            style={{ background: 'linear-gradient(to right, #2563eb, #06b6d4)' }} />
-
-          {[
-            {
-              step: '01',
-              icon: '🛒',
-              title: 'Chọn sản phẩm',
-              desc: 'Duyệt qua danh sách sản phẩm, chọn app bạn cần. Xem mô tả chi tiết, chọn biến thể và số lượng phù hợp.',
-              color: '#2563eb'
-            },
-            {
-              step: '02',
-              icon: '💳',
-              title: 'Thanh toán',
-              desc: 'Đặt hàng và chuyển khoản ngân hàng theo thông tin hướng dẫn. Nhanh chóng và an toàn.',
-              color: '#0891b2'
-            },
-            {
-              step: '03',
-              icon: '🎉',
-              title: 'Nhận tài khoản',
-              desc: 'Admin xác nhận và cập nhật thông tin tài khoản. Vào mục Đơn Hàng để xem thông tin đăng nhập.',
-              color: '#059669'
-            },
-          ].map(item => (
-            <div key={item.step} className="card p-7 relative overflow-hidden group hover:shadow-lg transition-all duration-200">
-              <div className="absolute -top-4 -right-4 text-8xl font-black opacity-5"
-                style={{ color: item.color }}>{item.step}</div>
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-5 shadow-sm"
-                style={{ background: `${item.color}15` }}>
-                {item.icon}
-              </div>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black text-white mb-4"
-                style={{ background: item.color }}>
-                {item.step}
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center mt-10">
-          <Link href="/shop" className="btn-primary text-base px-10 py-4">
-            Bắt Đầu Mua Sắm <ArrowRight size={18} />
+        <div className="text-center mt-8">
+          <Link href="/shop"
+            className="btn-primary px-8 py-3.5 text-base"
+            style={{ boxShadow: '0 4px 16px rgba(37,99,235,0.25)' }}>
+            Xem Tất Cả Sản Phẩm →
           </Link>
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* ═══════════════════════════════════
-          REVIEWS
-      ═══════════════════════════════════ */}
-      <section style={{ background: '#F8FAFC' }} className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-3">Đánh Giá</p>
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-3">
-              Khách hàng nói gì về App Xanh?
-            </h2>
-            <div className="flex items-center justify-center gap-1 mb-2">
-              {[1,2,3,4,5].map(i => <Star key={i} size={20} fill="#facc15" className="text-yellow-400" />)}
-              <span className="ml-2 text-slate-600 font-semibold">4.9/5 từ 500+ đánh giá</span>
-            </div>
-          </div>
+// ── How It Works ──────────────────────────────────────────
+function HowItWorksSection() {
+  const steps = [
+    {
+      step: '01',
+      icon: '🔍',
+      title: 'Chọn sản phẩm',
+      desc: 'Duyệt qua 50+ tài khoản premium. Chọn gói phù hợp với nhu cầu.',
+      color: '#2563EB', bg: '#EFF6FF',
+    },
+    {
+      step: '02',
+      icon: '💳',
+      title: 'Thanh toán QR',
+      desc: 'Quét mã VietQR, chuyển khoản nhanh. Xác nhận trong vài giây.',
+      color: '#7C3AED', bg: '#F5F3FF',
+    },
+    {
+      step: '03',
+      icon: '📦',
+      title: 'Nhận tài khoản',
+      desc: 'Admin giao tài khoản ngay sau khi xác nhận. Thường dưới 5 phút.',
+      color: '#16A34A', bg: '#F0FDF4',
+    },
+    {
+      step: '04',
+      icon: '✅',
+      title: 'Sử dụng & bảo hành',
+      desc: 'Đăng nhập ngay. Có vấn đề? Bảo hành miễn phí, hỗ trợ Zalo 24/7.',
+      color: '#D97706', bg: '#FFFBEB',
+    },
+  ]
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {REVIEWS.map(review => (
-              <div key={review.name} className="card p-5 flex flex-col gap-3 hover:shadow-md transition-all">
-                <div className="flex items-center gap-1">
-                  {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="#facc15" className="text-yellow-400" />)}
+  return (
+    <section className="py-16 md:py-20 bg-white">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <div className="text-center mb-12">
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#2563EB' }}>Quy Trình</p>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+            Mua Hàng Đơn Giản 4 Bước
+          </h2>
+          <p className="text-slate-500 mt-2">Từ lúc chọn đến lúc dùng chưa đến 10 phút</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {steps.map((step, i) => (
+            <div key={step.step} className="relative">
+              {i < steps.length - 1 && (
+                <div className="hidden lg:block absolute top-10 left-full w-full h-0.5 z-0"
+                  style={{ background: 'linear-gradient(to right, #CBD5E1, transparent)' }} />
+              )}
+              <div className="relative z-10 text-center p-6 rounded-2xl border border-slate-100 hover:shadow-md transition-all"
+                style={{ background: '#FAFAFA' }}>
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4"
+                  style={{ background: step.bg }}>
+                  {step.icon}
                 </div>
-                <p className="text-slate-600 text-sm leading-relaxed flex-1">"{review.text}"</p>
-                <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-xl"
-                    style={{ background: 'linear-gradient(135deg, #dbeafe, #e0f2fe)' }}>
+                <div className="text-xs font-black mb-2" style={{ color: step.color }}>{step.step}</div>
+                <h3 className="font-bold text-slate-900 mb-2">{step.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ── Reviews ───────────────────────────────────────────────
+function ReviewsSection() {
+  const reviews = [
+    { name: 'Nguyễn Minh Tuấn', avatar: 'N', role: 'Freelance Designer', rating: 5, text: 'Mua Canva Pro giá rẻ hơn 10 lần so với mua trực tiếp. Tài khoản ổn định, dùng được 6 tháng chưa có vấn đề gì. Rất recommend!', product: 'Canva Pro 1 Năm', color: '#7C3AED' },
+    { name: 'Trần Thị Lan', avatar: 'T', role: 'Content Creator', rating: 5, text: 'ChatGPT Plus Business xịn lắm, có đầy đủ GPT-5.2 và DALL-E. Admin hỗ trợ rất nhiệt tình, giao hàng siêu nhanh luôn.', product: 'ChatGPT Plus Business', color: '#10A37F' },
+    { name: 'Lê Hoàng Nam', avatar: 'L', role: 'Marketing Manager', rating: 5, text: 'Đã mua YouTube Premium và Claude Pro. Cả 2 đều chất lượng, giá rẻ bất ngờ. Sẽ tiếp tục ủng hộ App Xanh!', product: 'YouTube Premium', color: '#FF0000' },
+    { name: 'Phạm Thị Hoa', avatar: 'P', role: 'Sinh viên', rating: 5, text: 'Sinh viên như mình cần tiết kiệm nên App Xanh là lựa chọn hoàn hảo. Mua ChatGPT Go chỉ 200k mà dùng cả năm, quá ngon!', product: 'ChatGPT Go 1 Năm', color: '#2563EB' },
+    { name: 'Võ Đình Khoa', avatar: 'V', role: 'Developer', rating: 5, text: 'GitHub Copilot Pro mua ở đây rẻ hơn nhiều. Code xịn hẳn lên, tiết kiệm thời gian cực kỳ. Admin giao nhanh, có bảo hành đàng hoàng.', product: 'GitHub Copilot Pro', color: '#0891B2' },
+    { name: 'Đặng Thu Hương', avatar: 'Đ', role: 'Entrepreneur', rating: 5, text: 'Mua nhiều lần rồi, lần nào cũng ổn. Giá tốt, service tốt, tài khoản bền. Đã giới thiệu cho cả team dùng!', product: 'Adobe CC + Canva', color: '#EA580C' },
+  ]
+
+  return (
+    <section className="py-16 md:py-20" style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)' }}>
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        <div className="text-center mb-12">
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#2563EB' }}>Đánh Giá</p>
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+            Khách Hàng Nói Gì?
+          </h2>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <div className="flex">
+              {[1,2,3,4,5].map(s => (
+                <svg key={s} className="w-5 h-5" fill="#F59E0B" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+              ))}
+            </div>
+            <span className="font-bold text-slate-900">5.0</span>
+            <span className="text-slate-500 text-sm">/ 200+ đánh giá</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {reviews.map((review, i) => (
+            <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all">
+              {/* Stars */}
+              <div className="flex mb-3">
+                {[1,2,3,4,5].map(s => (
+                  <svg key={s} className="w-4 h-4" fill="#F59E0B" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                ))}
+              </div>
+
+              <p className="text-slate-700 text-sm leading-relaxed mb-4">"{review.text}"</p>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${review.color}, #0891B2)` }}>
                     {review.avatar}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900">{review.name}</p>
-                    <p className="text-xs text-slate-400">{review.product}</p>
+                    <p className="font-bold text-slate-900 text-sm">{review.name}</p>
+                    <p className="text-xs text-slate-400">{review.role}</p>
                   </div>
                 </div>
+                <span className="text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0"
+                  style={{ background: '#F1F5F9', color: '#475569' }}>
+                  {review.product}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom trust bar */}
+        <div className="mt-12 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            {[
+              { icon: '🏆', value: '1,200+', label: 'Đơn hàng thành công' },
+              { icon: '⭐', value: '5.0/5', label: 'Điểm đánh giá TB' },
+              { icon: '🔄', value: '95%', label: 'Khách quay lại' },
+              { icon: '💬', value: '< 2 phút', label: 'Thời gian phản hồi' },
+            ].map(item => (
+              <div key={item.label}>
+                <div className="text-2xl mb-1">{item.icon}</div>
+                <p className="font-black text-xl text-slate-900">{item.value}</p>
+                <p className="text-xs text-slate-500">{item.label}</p>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* ═══════════════════════════════════
-          CTA BOTTOM
-      ═══════════════════════════════════ */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="rounded-3xl p-10 md:p-14 text-center relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 50%, #059669 100%)' }}>
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ background: 'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.1), transparent 60%)' }} />
-            <div className="relative">
-              <p className="text-blue-200 text-sm font-semibold uppercase tracking-wider mb-3">App Xanh</p>
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-                Sẵn sàng tiết kiệm đến 90%?
-              </h2>
-              <p className="text-blue-100 mb-8 max-w-lg mx-auto text-lg">
-                Hàng trăm sản phẩm premium đang chờ bạn với mức giá không thể tin được.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/shop"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-base transition-all"
-                  style={{ background: 'white', color: '#1d4ed8' }}>
-                  Xem Sản Phẩm Ngay <ArrowRight size={18} />
-                </Link>
-                <a href="https://zalo.me/0888993991"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-base transition-all"
-                  style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}>
-                  💬 Chat Zalo Ngay
-                </a>
-              </div>
-              <div className="mt-8 flex flex-wrap justify-center gap-6 text-blue-100 text-sm">
-                {['✅ Miễn phí đăng ký', '⚡ Giao hàng tức thì', '🛡️ Bảo hành 100%', '📞 Hỗ trợ Zalo'].map(item => (
-                  <span key={item}>{item}</span>
-                ))}
-              </div>
+// ── CTA ───────────────────────────────────────────────────
+function CtaSection() {
+  return (
+    <section className="py-16 md:py-20 bg-white">
+      <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="rounded-3xl p-10 md:p-14 relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, #1D4ED8 0%, #0891B2 100%)' }}>
+
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full"
+              style={{ background: 'radial-gradient(circle, white, transparent)' }} />
+            <div className="absolute -bottom-10 -left-10 w-64 h-64 rounded-full"
+              style={{ background: 'radial-gradient(circle, white, transparent)' }} />
+          </div>
+
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold mb-5 text-blue-900"
+              style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}>
+              ⚡ Giao hàng tự động 24/7
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+              Sẵn sàng tiết kiệm đến 90%?
+            </h2>
+            <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
+              Hàng trăm khách hàng đã tin dùng App Xanh. Tham gia ngay hôm nay!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/shop"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base bg-white transition-all hover:bg-blue-50"
+                style={{ color: '#1D4ED8' }}>
+                🛍️ Mua Ngay
+              </Link>
+              <a href="https://zalo.me/0888993991" target="_blank"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base border-2 border-white text-white transition-all hover:bg-white/10">
+                💬 Chat Zalo
+              </a>
             </div>
           </div>
         </div>
-      </section>
-    </>
+      </div>
+    </section>
   )
 }
