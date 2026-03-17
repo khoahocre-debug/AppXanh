@@ -27,7 +27,7 @@ export default async function HomePage() {
   )
 }
 
-// ── SVG ICONS ─────────────────────────────────────────────
+// ── SVG STAT ICONS ────────────────────────────────────────
 const IconUsers = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -35,7 +35,6 @@ const IconUsers = () => (
     <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#2563EB" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 )
-
 const IconBox = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
     <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" stroke="#7C3AED" strokeWidth="2" strokeLinejoin="round"/>
@@ -43,17 +42,41 @@ const IconBox = () => (
     <line x1="12" y1="22.08" x2="12" y2="12" stroke="#7C3AED" strokeWidth="2"/>
   </svg>
 )
-
 const IconStar = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="#FDE68A">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
-
 const IconClock = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
     <circle cx="12" cy="12" r="10" stroke="#16A34A" strokeWidth="2"/>
     <polyline points="12 6 12 12 16 14" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
+// Trust stats bottom icons
+const IconTrophy = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path d="M6 9H4a2 2 0 01-2-2V5h4M18 9h2a2 2 0 002-2V5h-4" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M6 5h12v7a6 6 0 01-12 0V5z" stroke="#D97706" strokeWidth="2" strokeLinecap="round"/>
+    <path d="M12 18v4M8 22h8" stroke="#D97706" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+)
+const IconStarFilled = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+)
+const IconRefresh = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <polyline points="23 4 23 10 17 10" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points="1 20 1 14 7 14" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const IconZap = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#16A34A" stroke="#16A34A" strokeWidth="1" strokeLinejoin="round"/>
   </svg>
 )
 
@@ -63,7 +86,6 @@ function HeroSection() {
     <section className="relative overflow-hidden py-20 md:py-28 px-4"
       style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 30%, #f0fdf4 70%, #f8fafc 100%)' }}>
 
-      {/* Blobs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-25 blur-3xl pointer-events-none"
         style={{ background: 'radial-gradient(circle, #3b82f6, transparent)' }} />
       <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none"
@@ -109,7 +131,7 @@ function HeroSection() {
               Giá rẻ hơn đến <strong className="text-blue-600">90%</strong> so với mua trực tiếp. Bảo hành tận tâm.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-10">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/shop" className="btn-primary py-4 px-8 text-base justify-center"
                 style={{ boxShadow: '0 8px 24px rgba(37,99,235,0.3)' }}>
                 Xem Tất Cả Sản Phẩm →
@@ -118,31 +140,23 @@ function HeroSection() {
                 💬 Tư Vấn Zalo
               </a>
             </div>
-
-            <div className="flex flex-wrap items-center gap-5 pt-6 border-t border-slate-200">
-              {[
-                { icon: '✅', text: 'Bảo hành đăng nhập' },
-                { icon: '⚡', text: 'Giao trong 5 phút' },
-                { icon: '🔒', text: 'Tài khoản riêng tư' },
-              ].map(item => (
-                <div key={item.text} className="flex items-center gap-1.5 text-sm text-slate-600 font-medium">
-                  {item.icon} {item.text}
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* RIGHT: floating cards */}
           <div className="hidden lg:block relative h-[480px]">
 
-            {/* ChatGPT card — top right, nghiêng phải */}
+            {/* ChatGPT card */}
             <div className="absolute bg-white rounded-2xl shadow-xl border border-slate-100 p-4 w-72"
               style={{ top: '0%', right: '0%', transform: 'rotate(2deg)', animation: 'float 3.2s ease-in-out infinite' }}>
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#E8F7F3' }}>
-                  <svg width="28" height="28" viewBox="0 0 41 41" fill="none">
-                    <path d="M37.532 16.87a9.963 9.963 0 00-.856-8.184 10.078 10.078 0 00-10.855-4.835 9.964 9.964 0 00-6.239-3.746 10.078 10.078 0 00-9.413 3.632 9.963 9.963 0 00-3.735 6.176A10.078 10.078 0 00.908 20.07a9.963 9.963 0 00.856 8.185 10.078 10.078 0 0010.855 4.835 9.964 9.964 0 006.239 3.746 10.078 10.078 0 009.414-3.632 9.963 9.963 0 003.734-6.176 10.078 10.078 0 00-4.474-10.158zM22.016 37.422a7.474 7.474 0 01-4.799-1.735l.237-.134 7.964-4.6a1.294 1.294 0 00.655-1.134V19.054l3.366 1.944a.12.12 0 01.066.092v9.299a7.505 7.505 0 01-7.49 7.033zM6.1 31.14a7.471 7.471 0 01-.894-5.023l.237.141 7.964 4.6a1.297 1.297 0 001.308 0l9.724-5.614v3.888a.12.12 0 01-.048.103L16.323 34.2A7.505 7.505 0 016.1 31.14zm-1.986-16.32A7.474 7.474 0 018.023 10.8v9.475a1.294 1.294 0 00.654 1.132l9.723 5.614-3.366 1.944a.12.12 0 01-.114.012L7.044 24.3a7.504 7.504 0 01-2.93-9.48zm27.658 6.437l-9.724-5.615 3.367-1.943a.121.121 0 01.114-.012l7.872 4.547a7.505 7.505 0 01-1.158 13.528v-9.476a1.293 1.293 0 00-.471-1.029zm3.35-5.043l-.236-.141-7.965-4.6a1.298 1.298 0 00-1.308 0l-9.723 5.614v-3.888a.12.12 0 01.048-.103l7.867-4.542a7.505 7.505 0 0111.317 7.66zm-21.063 6.929l-3.367-1.944a.12.12 0 01-.065-.092v-9.299a7.505 7.505 0 0112.293-5.756l-.236.134-7.965 4.6a1.294 1.294 0 00-.654 1.132l-.006 11.225zm1.829-3.943l4.33-2.501 4.332 2.497v4.998l-4.331 2.5-4.331-2.5z" fill="#10A37F"/>
-                  </svg>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  style={{ background: '#E8F7F3' }}>
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/240px-ChatGPT_logo.svg.png"
+                    alt="ChatGPT"
+                    className="w-8 h-8 object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 text-sm leading-tight">ChatGPT Plus Business</p>
@@ -158,14 +172,18 @@ function HeroSection() {
               </div>
             </div>
 
-            {/* YouTube card — middle left, nghiêng trái */}
+            {/* YouTube card */}
             <div className="absolute bg-white rounded-2xl shadow-lg border border-slate-100 p-4 w-64"
               style={{ top: '37%', left: '0%', transform: 'rotate(-2.5deg)', animation: 'float 3.8s ease-in-out infinite', animationDelay: '0.4s' }}>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#FFF0F0' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24">
-                    <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" fill="#FF0000"/>
-                  </svg>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  style={{ background: '#FFF0F0' }}>
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/159px-YouTube_full-color_icon_%282017%29.svg.png"
+                    alt="YouTube"
+                    className="w-7 h-7 object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 text-sm leading-tight">YouTube Premium 1 Năm</p>
@@ -178,14 +196,18 @@ function HeroSection() {
               </div>
             </div>
 
-            {/* Canva card — bottom right, nghiêng phải nhẹ */}
+            {/* Canva card */}
             <div className="absolute bg-white rounded-2xl shadow-lg border border-slate-100 p-4 w-60"
               style={{ bottom: '4%', right: '5%', transform: 'rotate(1.5deg)', animation: 'float 4.2s ease-in-out infinite', animationDelay: '0.8s' }}>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#F3EEFF' }}>
-                  <svg width="26" height="26" viewBox="0 0 24 24">
-                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm3.578 16.813c-.472.392-1.174.59-2.109.59-.606 0-1.162-.098-1.669-.294-.507-.196-.944-.482-1.313-.857-.368-.375-.655-.83-.862-1.366C9.4 14.35 9.3 13.748 9.3 13.08c0-.668.1-1.27.3-1.806.2-.536.486-.991.857-1.366.37-.375.81-.661 1.318-.857.508-.196 1.063-.294 1.668-.294.438 0 .85.06 1.238.18.388.12.735.29 1.04.513.308.222.558.49.75.806.194.315.316.67.37 1.062h-1.73c-.064-.375-.23-.664-.5-.866-.27-.202-.613-.303-1.03-.303-.293 0-.558.052-.794.156-.235.104-.436.254-.604.45-.167.196-.297.436-.387.72-.09.284-.135.606-.135.966 0 .365.046.692.135.98.09.287.22.531.387.732.167.2.37.354.604.46.236.105.5.157.794.157.44 0 .8-.112 1.08-.337.28-.225.452-.534.518-.927h1.73c-.056.395-.177.747-.363 1.057-.186.31-.43.572-.73.787zm2.312.117h-1.72V9.35h1.72v7.58zm-.86-8.75c-.284 0-.516-.093-.698-.279-.182-.185-.273-.413-.273-.682 0-.27.09-.497.273-.683.182-.186.414-.279.698-.279s.516.093.698.279c.182.186.273.413.273.683 0 .269-.09.497-.273.682-.182.186-.414.28-.698.28z" fill="#7D2AE8"/>
-                  </svg>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                  style={{ background: '#F3EEFF' }}>
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Canva_Logo.svg/250px-Canva_Logo.svg.png"
+                    alt="Canva"
+                    className="w-16 h-7 object-contain"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
                 </div>
                 <div>
                   <p className="font-bold text-slate-900 text-sm leading-tight">Canva Pro 1 Năm</p>
@@ -314,7 +336,8 @@ function FeaturedProducts({ products }: { products: any[] }) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* Grid: mobile 2 col, desktop 3 col */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
           {products.map(product => {
             const price = product.price
             const compareAt = product.compare_at_price
@@ -324,6 +347,8 @@ function FeaturedProducts({ products }: { products: any[] }) {
             return (
               <Link key={product.id} href={`/product/${product.slug}`}
                 className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
+
+                {/* Image 16:9 */}
                 <div className="relative w-full flex-shrink-0" style={{ paddingTop: '56.25%' }}>
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe)' }}>
                     {coverImage ? (
@@ -335,43 +360,48 @@ function FeaturedProducts({ products }: { products: any[] }) {
                       </div>
                     )}
                     {product.badge_text && (
-                      <div className="absolute top-3 left-3">
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg text-white shadow-sm"
+                      <div className="absolute top-2 left-2">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-lg text-white shadow-sm"
                           style={{ background: product.badge_text === 'Hot' ? '#EF4444' : product.badge_text === 'Mới' ? '#22C55E' : '#F97316' }}>
                           {product.badge_text}
                         </span>
                       </div>
                     )}
                     {discount >= 10 && (
-                      <div className="absolute top-3 right-3">
-                        <span className="text-xs font-black px-2.5 py-1 rounded-lg" style={{ background: '#FEF9C3', color: '#854D0E' }}>
+                      <div className="absolute top-2 right-2">
+                        <span className="text-xs font-black px-2 py-0.5 rounded-lg" style={{ background: '#FEF9C3', color: '#854D0E' }}>
                           -{discount}%
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col flex-1 p-4 gap-1.5">
+
+                {/* Content */}
+                <div className="flex flex-col flex-1 p-3 md:p-4 gap-1">
                   {product.categories && (
                     <span className="text-xs font-bold" style={{ color: '#2563EB' }}>{product.categories.name}</span>
                   )}
-                  <h3 className="font-bold text-slate-900 line-clamp-2 leading-snug group-hover:text-blue-700 transition-colors">
+                  <h3 className="font-bold text-slate-900 line-clamp-2 leading-snug text-sm group-hover:text-blue-700 transition-colors">
                     {product.name}
                   </h3>
                   {product.short_description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">{product.short_description}</p>
+                    <p className="hidden md:block text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">
+                      {product.short_description}
+                    </p>
                   )}
-                  <div className="flex items-center justify-between pt-3 mt-auto border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-2 mt-auto border-t border-slate-100">
                     <div>
-                      <span className="text-xl font-black" style={{ color: '#2563EB' }}>{formatPrice(price)}</span>
+                      <span className="text-base md:text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(price)}</span>
                       {compareAt && compareAt > price && (
-                        <span className="text-xs text-slate-400 line-through ml-2">{formatPrice(compareAt)}</span>
+                        <span className="hidden sm:inline text-xs text-slate-400 line-through ml-1.5">{formatPrice(compareAt)}</span>
                       )}
                     </div>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
                       style={{ background: '#DCFCE7', color: '#166534' }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#22C55E' }} />
-                      Còn hàng
+                      <span className="hidden sm:inline">Còn hàng</span>
+                      <span className="sm:hidden">Còn</span>
                     </span>
                   </div>
                 </div>
@@ -525,17 +555,19 @@ function ReviewsSectionWrapper() {
 
         <ReviewsCarousel />
 
-        {/* Trust stats */}
+        {/* Trust stats — SVG icons */}
         <div className="mt-10 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             {[
-              { icon: '🏆', value: '5,000+', label: 'Đơn hàng thành công' },
-              { icon: '⭐', value: '5.0/5', label: 'Điểm đánh giá TB' },
-              { icon: '🔄', value: '95%', label: 'Khách quay lại' },
-              { icon: '💬', value: '< 2 phút', label: 'Thời gian phản hồi' },
+              { icon: <IconTrophy />, value: '5,000+', label: 'Đơn hàng thành công', bg: '#FFFBEB' },
+              { icon: <IconStarFilled />, value: '5.0/5', label: 'Điểm đánh giá TB', bg: '#FFFBEB' },
+              { icon: <IconRefresh />, value: '95%', label: 'Khách quay lại', bg: '#EFF6FF' },
+              { icon: <IconZap />, value: '< 2 phút', label: 'Thời gian phản hồi', bg: '#F0FDF4' },
             ].map(item => (
               <div key={item.label}>
-                <div className="text-2xl mb-1">{item.icon}</div>
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: item.bg }}>
+                  {item.icon}
+                </div>
                 <p className="font-black text-xl text-slate-900">{item.value}</p>
                 <p className="text-xs text-slate-500">{item.label}</p>
               </div>
