@@ -5,7 +5,6 @@ import { ReviewsCarousel } from '@/components/ReviewsCarousel'
 
 export default async function HomePage() {
   const supabase = await createClient()
-
   const [{ data: products }, { data: categories }] = await Promise.all([
     supabase.from('products')
       .select(`*, categories(*), product_variants(*), product_images(*)`)
@@ -13,7 +12,6 @@ export default async function HomePage() {
       .order('created_at', { ascending: false }).limit(6),
     supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
   ])
-
   return (
     <div className="overflow-x-hidden">
       <HeroSection />
@@ -27,7 +25,6 @@ export default async function HomePage() {
   )
 }
 
-// ── SVG STAT ICONS ────────────────────────────────────────
 const IconUsers = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -53,35 +50,72 @@ const IconClock = () => (
     <polyline points="12 6 12 12 16 14" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
-
-// Trust stats bottom icons
 const IconTrophy = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M6 9H4a2 2 0 01-2-2V5h4M18 9h2a2 2 0 002-2V5h-4" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M6 5h12v7a6 6 0 01-12 0V5z" stroke="#D97706" strokeWidth="2" strokeLinecap="round"/>
     <path d="M12 18v4M8 22h8" stroke="#D97706" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 )
 const IconStarFilled = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="#F59E0B">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
   </svg>
 )
 const IconRefresh = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <polyline points="23 4 23 10 17 10" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <polyline points="1 20 1 14 7 14" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 )
 const IconZap = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="#16A34A" stroke="#16A34A" strokeWidth="1" strokeLinejoin="round"/>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="#16A34A">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
   </svg>
 )
 
 // ── HERO ──────────────────────────────────────────────────
 function HeroSection() {
+  const heroCards = [
+    {
+      name: 'ChatGPT Plus Business',
+      sub: 'GPT-5.2 · DALL-E · Sora',
+      price: 99000, oldPrice: 620000,
+      imgSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/ChatGPT-Logo.svg/960px-ChatGPT-Logo.svg.png',
+      imgClass: 'w-8 h-8 object-contain',
+      bg: '#E8F7F3',
+      style: { top: '0%', right: '0%', transform: 'rotate(2deg)', animation: 'float 3.2s ease-in-out infinite' },
+      width: 'w-72',
+      discount: '−84%',
+      discountStyle: { background: '#FEE2E2', color: '#991B1B' },
+    },
+    {
+      name: 'YouTube Premium 1 Năm',
+      sub: 'Không quảng cáo',
+      price: 500000, oldPrice: 900000,
+      imgSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/159px-YouTube_full-color_icon_%282017%29.svg.png',
+      imgClass: 'w-8 h-8 object-contain',
+      bg: '#FFF0F0',
+      style: { top: '37%', left: '0%', transform: 'rotate(-2.5deg)', animation: 'float 3.8s ease-in-out infinite', animationDelay: '0.4s' },
+      width: 'w-64',
+      discount: '−44%',
+      discountStyle: { background: '#DCFCE7', color: '#166534' },
+    },
+    {
+      name: 'Canva Pro 1 Năm',
+      sub: '100M+ templates',
+      price: 150000, oldPrice: 1400000,
+      imgSrc: 'https://static.vecteezy.com/system/resources/thumbnails/048/759/334/small/canva-transparent-icon-free-png.png',
+      imgClass: 'w-8 h-8 object-contain',
+      bg: '#F3EEFF',
+      style: { bottom: '4%', right: '5%', transform: 'rotate(1.5deg)', animation: 'float 4.2s ease-in-out infinite', animationDelay: '0.8s' },
+      width: 'w-60',
+      discount: '−89%',
+      discountStyle: { background: '#FEE2E2', color: '#991B1B' },
+    },
+  ]
+
   return (
     <section className="relative overflow-hidden py-20 md:py-28 px-4"
       style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 30%, #f0fdf4 70%, #f8fafc 100%)' }}>
@@ -95,8 +129,6 @@ function HeroSection() {
 
       <div className="relative max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
-          {/* LEFT */}
           <div>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold border"
               style={{ background: 'rgba(255,255,255,0.85)', borderColor: '#BFDBFE', color: '#1D4ED8' }}>
@@ -128,7 +160,7 @@ function HeroSection() {
 
             <p className="text-slate-600 text-lg leading-relaxed mb-8">
               Mua <strong>ChatGPT Plus, Claude Pro, Canva, YouTube Premium</strong> và 100+ app premium.
-              Giá rẻ hơn đến <strong className="text-blue-600">90%</strong> so với mua trực tiếp. Bảo hành tận tâm.
+              Giá rẻ hơn đến <strong className="text-blue-600">90%</strong> so với mua trực tiếp.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
@@ -142,85 +174,34 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* RIGHT: floating cards */}
+          {/* Floating cards */}
           <div className="hidden lg:block relative h-[480px]">
+            {heroCards.map((card) => (
+              <div key={card.name} className={`absolute bg-white rounded-2xl shadow-xl border border-slate-100 p-4 ${card.width}`}
+                style={card.style}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: card.bg }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={card.imgSrc} alt={card.name} className={card.imgClass} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm leading-tight">{card.name}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{card.sub}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(card.price)}</span>
+                    <span className="text-xs text-slate-400 line-through ml-2">{formatPrice(card.oldPrice)}</span>
+                  </div>
+                  <span className="text-xs font-bold px-2 py-1 rounded-lg" style={card.discountStyle}>
+                    {card.discount}
+                  </span>
+                </div>
+              </div>
+            ))}
 
-            {/* ChatGPT card */}
-            <div className="absolute bg-white rounded-2xl shadow-xl border border-slate-100 p-4 w-72"
-              style={{ top: '0%', right: '0%', transform: 'rotate(2deg)', animation: 'float 3.2s ease-in-out infinite' }}>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                  style={{ background: '#E8F7F3' }}>
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/240px-ChatGPT_logo.svg.png"
-                    alt="ChatGPT"
-                    className="w-8 h-8 object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm leading-tight">ChatGPT Plus Business</p>
-                  <p className="text-xs text-slate-400 mt-0.5">GPT-5.2 · DALL-E · Sora</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(99000)}</span>
-                  <span className="text-xs text-slate-400 line-through ml-2">{formatPrice(620000)}</span>
-                </div>
-                <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: '#FEE2E2', color: '#991B1B' }}>-84%</span>
-              </div>
-            </div>
-
-            {/* YouTube card */}
-            <div className="absolute bg-white rounded-2xl shadow-lg border border-slate-100 p-4 w-64"
-              style={{ top: '37%', left: '0%', transform: 'rotate(-2.5deg)', animation: 'float 3.8s ease-in-out infinite', animationDelay: '0.4s' }}>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                  style={{ background: '#FFF0F0' }}>
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/159px-YouTube_full-color_icon_%282017%29.svg.png"
-                    alt="YouTube"
-                    className="w-7 h-7 object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm leading-tight">YouTube Premium 1 Năm</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Không quảng cáo</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(500000)}</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{ background: '#DCFCE7', color: '#166534' }}>-44%</span>
-              </div>
-            </div>
-
-            {/* Canva card */}
-            <div className="absolute bg-white rounded-2xl shadow-lg border border-slate-100 p-4 w-60"
-              style={{ bottom: '4%', right: '5%', transform: 'rotate(1.5deg)', animation: 'float 4.2s ease-in-out infinite', animationDelay: '0.8s' }}>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-                  style={{ background: '#F3EEFF' }}>
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Canva_Logo.svg/250px-Canva_Logo.svg.png"
-                    alt="Canva"
-                    className="w-16 h-7 object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm leading-tight">Canva Pro 1 Năm</p>
-                  <p className="text-xs text-slate-400 mt-0.5">100M+ templates</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(150000)}</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-lg" style={{ background: '#FEE2E2', color: '#991B1B' }}>-89%</span>
-              </div>
-            </div>
-
-            {/* Giao ngay badge */}
             <div className="absolute z-10" style={{ top: '46%', right: '28%', animation: 'float 2.6s ease-in-out infinite', animationDelay: '0.2s' }}>
               <div className="px-4 py-2.5 rounded-2xl font-bold shadow-xl text-sm flex items-center gap-2 text-white"
                 style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
@@ -257,7 +238,7 @@ function CategoriesSection({ categories }: { categories: any[] }) {
   const CAT_CONFIG: Record<string, { from: string; to: string; icon: React.ReactNode }> = {
     'ai-chatbot': {
       from: '#2563EB', to: '#0891B2',
-      icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="14" rx="4" fill="white" fillOpacity="0.9"/><circle cx="8" cy="11" r="2" fill="#2563EB"/><circle cx="16" cy="11" r="2" fill="#2563EB"/><path d="M9 15h6" stroke="#2563EB" strokeWidth="1.5" strokeLinecap="round"/><path d="M8 4V2M16 4V2" stroke="rgba(37,99,235,0.4)" strokeWidth="1.5" strokeLinecap="round"/><rect x="0" y="8" width="2" height="6" rx="1" fill="rgba(255,255,255,0.6)"/><rect x="22" y="8" width="2" height="6" rx="1" fill="rgba(255,255,255,0.6)"/></svg>
+      icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="14" rx="4" fill="white" fillOpacity="0.9"/><circle cx="8" cy="11" r="2" fill="#2563EB"/><circle cx="16" cy="11" r="2" fill="#2563EB"/><path d="M9 15h6" stroke="#2563EB" strokeWidth="1.5" strokeLinecap="round"/><rect x="0" y="8" width="2" height="6" rx="1" fill="rgba(255,255,255,0.6)"/><rect x="22" y="8" width="2" height="6" rx="1" fill="rgba(255,255,255,0.6)"/></svg>
     },
     'thiet-ke': {
       from: '#7C3AED', to: '#A855F7',
@@ -280,7 +261,6 @@ function CategoriesSection({ categories }: { categories: any[] }) {
       icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M8 10L5 12l3 2" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M13 10l3 2-3 2" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="4" width="20" height="14" rx="3" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5"/><path d="M9 20h6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
     },
   }
-
   const fallback = {
     from: '#64748B', to: '#94A3B8',
     icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="rgba(255,255,255,0.9)"/><path d="M8 12h8M12 8v8" stroke="#64748B" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -293,11 +273,8 @@ function CategoriesSection({ categories }: { categories: any[] }) {
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#2563EB' }}>Danh Mục</p>
           <h2 className="text-3xl font-black text-slate-900">Tìm theo loại sản phẩm</h2>
         </div>
-        <Link href="/shop" className="text-sm font-semibold hover:underline" style={{ color: '#2563EB' }}>
-          Xem tất cả →
-        </Link>
+        <Link href="/shop" className="text-sm font-semibold hover:underline" style={{ color: '#2563EB' }}>Xem tất cả →</Link>
       </div>
-
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
         {categories.map(cat => {
           const cfg = CAT_CONFIG[cat.slug] ?? fallback
@@ -331,27 +308,22 @@ function FeaturedProducts({ products }: { products: any[] }) {
             <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#2563EB' }}>Nổi Bật</p>
             <h2 className="text-3xl font-black text-slate-900">Sản phẩm bán chạy nhất</h2>
           </div>
-          <Link href="/shop" className="text-sm font-semibold hover:underline" style={{ color: '#2563EB' }}>
-            Xem thêm →
-          </Link>
+          <Link href="/shop" className="text-sm font-semibold hover:underline" style={{ color: '#2563EB' }}>Xem thêm →</Link>
         </div>
 
-        {/* Grid: mobile 2 col, desktop 3 col */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
           {products.map(product => {
             const price = product.price
             const compareAt = product.compare_at_price
             const discount = discountPercent(price, compareAt ?? 0)
             const coverImage = product.product_images?.find((i: any) => i.sort_order === 0) ?? product.product_images?.[0] ?? null
-
             return (
               <Link key={product.id} href={`/product/${product.slug}`}
                 className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
-
-                {/* Image 16:9 */}
                 <div className="relative w-full flex-shrink-0" style={{ paddingTop: '56.25%' }}>
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe)' }}>
                     {coverImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={coverImage.image_url} alt={coverImage.alt_text ?? product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
@@ -361,7 +333,7 @@ function FeaturedProducts({ products }: { products: any[] }) {
                     )}
                     {product.badge_text && (
                       <div className="absolute top-2 left-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-lg text-white shadow-sm"
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-lg text-white"
                           style={{ background: product.badge_text === 'Hot' ? '#EF4444' : product.badge_text === 'Mới' ? '#22C55E' : '#F97316' }}>
                           {product.badge_text}
                         </span>
@@ -376,8 +348,6 @@ function FeaturedProducts({ products }: { products: any[] }) {
                     )}
                   </div>
                 </div>
-
-                {/* Content */}
                 <div className="flex flex-col flex-1 p-3 md:p-4 gap-1">
                   {product.categories && (
                     <span className="text-xs font-bold" style={{ color: '#2563EB' }}>{product.categories.name}</span>
@@ -386,9 +356,7 @@ function FeaturedProducts({ products }: { products: any[] }) {
                     {product.name}
                   </h3>
                   {product.short_description && (
-                    <p className="hidden md:block text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">
-                      {product.short_description}
-                    </p>
+                    <p className="hidden md:block text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">{product.short_description}</p>
                   )}
                   <div className="flex items-center justify-between pt-2 mt-auto border-t border-slate-100">
                     <div>
@@ -398,7 +366,7 @@ function FeaturedProducts({ products }: { products: any[] }) {
                       )}
                     </div>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
-                      style={{ background: '#DCFCE7', color: '#166534' }}>
+                      style={{ background: '#DCFCE7', color: '#166634' }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#22C55E' }} />
                       <span className="hidden sm:inline">Còn hàng</span>
                       <span className="sm:hidden">Còn</span>
@@ -439,7 +407,7 @@ function WhySection() {
     {
       from: '#D97706', to: '#F59E0B', highlight: 'Tiết kiệm 90%',
       title: 'Giá Rẻ Nhất',
-      desc: 'Tiết kiệm đến 90% so với mua trực tiếp. Cập nhật giá liên tục, cạnh tranh nhất thị trường.',
+      desc: 'Tiết kiệm đến 90% so với mua trực tiếp. Cập nhật giá liên tục, cạnh tranh nhất.',
       icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white" strokeWidth="1.5"/><path d="M12 6v12M9 9h4.5a1.5 1.5 0 010 3H9m0 0h4.5a1.5 1.5 0 010 3H9" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>
     },
     {
@@ -449,7 +417,6 @@ function WhySection() {
       icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.51 12 19.79 19.79 0 01.48 3.42 2 2 0 012.46 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 8.64a16 16 0 006.29 6.29l.91-.91a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" fill="rgba(255,255,255,0.9)"/></svg>
     },
   ]
-
   return (
     <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 100%)' }}>
       <div className="max-w-7xl mx-auto">
@@ -492,7 +459,6 @@ function HowItWorksSection() {
     { step: '04', icon: '🎉', title: 'Dùng & bảo hành', color: '#D97706', bg: '#FFFBEB',
       desc: 'Đăng nhập ngay. Có vấn đề? Bảo hành miễn phí, hỗ trợ Zalo 8:00–22:00.' },
   ]
-
   return (
     <section className="py-20 bg-white px-4">
       <div className="max-w-7xl mx-auto">
@@ -555,7 +521,6 @@ function ReviewsSectionWrapper() {
 
         <ReviewsCarousel />
 
-        {/* Trust stats — SVG icons */}
         <div className="mt-10 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             {[
@@ -595,9 +560,7 @@ function CtaSection() {
               style={{ background: 'rgba(255,255,255,0.15)', color: 'white' }}>
               ⚡ Giao hàng tự động 24/7
             </div>
-            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-              Sẵn sàng tiết kiệm đến 90%?
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Sẵn sàng tiết kiệm đến 90%?</h2>
             <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
               Hàng trăm sản phẩm premium đang chờ bạn với mức giá không thể tin được.
             </p>
