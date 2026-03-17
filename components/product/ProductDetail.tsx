@@ -2,21 +2,13 @@
 import { useState } from 'react'
 import { useCartStore } from '@/lib/stores/cart'
 import { formatPrice, discountPercent } from '@/lib/utils'
-import { ShoppingCart, Zap, Shield, Clock, Star, ChevronRight, Copy, Check } from 'lucide-react'
+import { ShoppingCart, Zap, Shield, Clock, Star, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { ReviewsSection } from '@/components/product/ReviewsSection'
 import type { Product } from '@/types'
 
-interface Review {
-  id: string
-  reviewer_name: string
-  reviewer_avatar: string | null
-  rating: number
-  content: string
-  created_at: string
-}
-
-export function ProductDetail({ product }: { product: Product & { product_reviews?: Review[] } }) {
+export function ProductDetail({ product }: { product: Product & { product_reviews?: any[] } }) {
   const { addItem } = useCartStore()
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
     product.product_variants?.find(v => v.is_default)?.id ?? product.product_variants?.[0]?.id ?? null
@@ -25,7 +17,6 @@ export function ProductDetail({ product }: { product: Product & { product_review
   const [upgradeEmail, setUpgradeEmail] = useState('')
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description')
   const [activeImage, setActiveImage] = useState(0)
-  const [copied, setCopied] = useState(false)
 
   const selectedVariant = product.product_variants?.find(v => v.id === selectedVariantId) ?? null
   const price = selectedVariant?.price ?? product.price
@@ -34,14 +25,14 @@ export function ProductDetail({ product }: { product: Product & { product_review
   const stock = selectedVariant?.stock ?? product.stock
   const isOutOfStock = stock === 0
 
-  const images = product.product_images?.sort((a, b) => a.sort_order - b.sort_order) ?? []
+  const images = product.product_images?.sort((a: any, b: any) => a.sort_order - b.sort_order) ?? []
   const coverImage = images[0] ?? null
-  const extraImages = images.slice(1)
 
-  const reviews = product.product_reviews ?? []
-  const avgRating = reviews.length > 0
-    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
-    : 5
+  const reviews = product.product_reviews?.filter((r: any) => r.status === 'approved' && !r.parent_id) ?? []
+  const ratedReviews = reviews.filter((r: any) => r.rating)
+  const avgRating = ratedReviews.length > 0
+    ? ratedReviews.reduce((s: number, r: any) => s + r.rating, 0) / ratedReviews.length
+    : 0
 
   const needsUpgradeEmail = product.delivery_type === 'upgrade_owner' || product.delivery_type === 'both'
 
@@ -101,8 +92,6 @@ export function ProductDetail({ product }: { product: Product & { product_review
                   <div className="text-8xl opacity-30">🤖</div>
                 </div>
               )}
-
-              {/* Badges */}
               {product.badge_text && (
                 <div className="absolute top-3 left-3">
                   <span className="text-xs font-bold px-3 py-1.5 rounded-xl shadow text-white"
@@ -125,7 +114,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
           {/* Thumbnails */}
           {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {images.map((img, i) => (
+              {images.map((img: any, i: number) => (
                 <button key={img.id} onClick={() => setActiveImage(i)}
                   className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all"
                   style={{ borderColor: activeImage === i ? '#2563EB' : '#E2E8F0' }}>
@@ -137,7 +126,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
           )}
 
           {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-2 mt-2">
+          <div className="grid grid-cols-3 gap-2">
             {[
               { icon: <Zap size={16} />, title: 'Giao tức thì', sub: 'Sau thanh toán', color: '#2563EB', bg: '#EFF6FF' },
               { icon: <Shield size={16} />, title: 'Bảo hành', sub: 'Đăng nhập lần đầu', color: '#16A34A', bg: '#F0FDF4' },
@@ -155,8 +144,6 @@ export function ProductDetail({ product }: { product: Product & { product_review
 
         {/* RIGHT: Info */}
         <div className="space-y-5">
-
-          {/* Category + title */}
           {product.categories && (
             <Link href={`/shop?category=${product.categories.slug}`}
               className="inline-flex items-center text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all"
@@ -169,8 +156,8 @@ export function ProductDetail({ product }: { product: Product & { product_review
             {product.name}
           </h1>
 
-          {/* Rating */}
-          {reviews.length > 0 && (
+          {/* Rating summary */}
+          {ratedReviews.length > 0 && (
             <div className="flex items-center gap-2">
               <div className="flex">
                 {[1,2,3,4,5].map(s => (
@@ -179,7 +166,11 @@ export function ProductDetail({ product }: { product: Product & { product_review
                 ))}
               </div>
               <span className="text-sm font-semibold text-slate-700">{avgRating.toFixed(1)}</span>
-              <span className="text-sm text-slate-400">({reviews.length} đánh giá)</span>
+              <span className="text-sm text-slate-400">({ratedReviews.length} đánh giá)</span>
+              <button onClick={() => setActiveTab('reviews')}
+                className="text-xs font-semibold hover:underline" style={{ color: '#2563EB' }}>
+                Xem tất cả →
+              </button>
             </div>
           )}
 
@@ -207,11 +198,9 @@ export function ProductDetail({ product }: { product: Product & { product_review
           {/* Variants */}
           {product.product_variants && product.product_variants.length > 0 && (
             <div>
-              <p className="text-sm font-bold text-slate-700 mb-2">
-                Chọn gói:
-              </p>
+              <p className="text-sm font-bold text-slate-700 mb-2">Chọn gói:</p>
               <div className="flex flex-wrap gap-2">
-                {product.product_variants.map(v => (
+                {product.product_variants.map((v: any) => (
                   <button key={v.id} onClick={() => setSelectedVariantId(v.id)}
                     disabled={v.stock === 0}
                     className="px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all disabled:opacity-40"
@@ -221,7 +210,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
                       color: selectedVariantId === v.id ? '#1D4ED8' : '#475569',
                     }}>
                     {v.option_value}
-{v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
+                    {v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
                   </button>
                 ))}
               </div>
@@ -264,7 +253,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
             </span>
           </div>
 
-          {/* CTA buttons */}
+          {/* CTA */}
           <div className="flex gap-3">
             <button onClick={handleBuyNow} disabled={isOutOfStock}
               className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base text-white disabled:opacity-50 transition-all"
@@ -278,7 +267,6 @@ export function ProductDetail({ product }: { product: Product & { product_review
             </button>
           </div>
 
-          {/* Total price */}
           {quantity > 1 && (
             <div className="p-3 rounded-xl text-sm font-semibold text-center"
               style={{ background: '#EFF6FF', color: '#1D4ED8' }}>
@@ -288,7 +276,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
         </div>
       </div>
 
-      {/* TABS: Mô Tả + Đánh Giá */}
+      {/* TABS */}
       <div className="border-b border-slate-200 mb-8 flex gap-1 overflow-x-auto">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
@@ -310,8 +298,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
               <h2 className="text-lg font-black text-slate-900 mb-5 flex items-center gap-2">
                 <span className="text-xl">📋</span> Mô Tả Chi Tiết
               </h2>
-              <div className="product-content"
-                dangerouslySetInnerHTML={{ __html: product.description_html }} />
+              <div className="product-content" dangerouslySetInnerHTML={{ __html: product.description_html }} />
             </div>
           )}
 
@@ -320,20 +307,17 @@ export function ProductDetail({ product }: { product: Product & { product_review
               <h2 className="text-lg font-black text-slate-900 mb-5 flex items-center gap-2">
                 <span className="text-xl">📖</span> Hướng Dẫn Sử Dụng
               </h2>
-              <div className="product-content"
-                dangerouslySetInnerHTML={{ __html: product.usage_guide_html }} />
+              <div className="product-content" dangerouslySetInnerHTML={{ __html: product.usage_guide_html }} />
             </div>
           )}
 
           {product.warranty_html && (
             <div className="rounded-2xl border p-6 md:p-8"
               style={{ background: '#F0FDF4', borderColor: '#BBF7D0' }}>
-              <h2 className="text-lg font-black mb-5 flex items-center gap-2"
-                style={{ color: '#166534' }}>
+              <h2 className="text-lg font-black mb-5 flex items-center gap-2" style={{ color: '#166534' }}>
                 <span className="text-xl">🛡️</span> Chính Sách Bảo Hành
               </h2>
-              <div className="product-content"
-                dangerouslySetInnerHTML={{ __html: product.warranty_html }} />
+              <div className="product-content" dangerouslySetInnerHTML={{ __html: product.warranty_html }} />
             </div>
           )}
 
@@ -342,93 +326,19 @@ export function ProductDetail({ product }: { product: Product & { product_review
               <h2 className="text-lg font-black text-slate-900 mb-5 flex items-center gap-2">
                 <span className="text-xl">❓</span> Câu Hỏi Thường Gặp
               </h2>
-              <div className="product-content"
-                dangerouslySetInnerHTML={{ __html: product.faq_html }} />
+              <div className="product-content" dangerouslySetInnerHTML={{ __html: product.faq_html }} />
             </div>
           )}
 
           {!product.description_html && !product.usage_guide_html && !product.warranty_html && !product.faq_html && (
-            <div className="text-center py-16 text-slate-400">
-              <p>Chưa có nội dung mô tả</p>
-            </div>
+            <div className="text-center py-16 text-slate-400">Chưa có nội dung mô tả</div>
           )}
         </div>
       )}
 
       {/* Tab: Đánh Giá */}
       {activeTab === 'reviews' && (
-        <div>
-          {reviews.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="text-5xl mb-4">⭐</div>
-              <p className="text-slate-400">Chưa có đánh giá nào</p>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {/* Rating summary */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 flex items-center gap-8">
-                <div className="text-center flex-shrink-0">
-                  <p className="text-5xl font-black" style={{ color: '#F59E0B' }}>
-                    {avgRating.toFixed(1)}
-                  </p>
-                  <div className="flex justify-center mt-1">
-                    {[1,2,3,4,5].map(s => (
-                      <Star key={s} size={16} fill={s <= Math.round(avgRating) ? '#F59E0B' : 'none'}
-                        style={{ color: '#F59E0B' }} />
-                    ))}
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">{reviews.length} đánh giá</p>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  {[5,4,3,2,1].map(star => {
-                    const count = reviews.filter(r => r.rating === star).length
-                    const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0
-                    return (
-                      <div key={star} className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500 w-4">{star}</span>
-                        <Star size={12} fill="#F59E0B" style={{ color: '#F59E0B' }} />
-                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
-                          <div className="h-full rounded-full transition-all"
-                            style={{ width: `${pct}%`, background: '#F59E0B' }} />
-                        </div>
-                        <span className="text-xs text-slate-400 w-6">{count}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Review list */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reviews.map(review => (
-                  <div key={review.id} className="bg-white rounded-2xl border border-slate-200 p-5">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
-                        {review.reviewer_avatar
-                          ? <img src={review.reviewer_avatar} alt={review.reviewer_name} className="w-full h-full object-cover rounded-full" />
-                          : review.reviewer_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{review.reviewer_name}</p>
-                        <div className="flex">
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} size={12} fill={s <= review.rating ? '#F59E0B' : 'none'}
-                              style={{ color: '#F59E0B' }} />
-                          ))}
-                        </div>
-                      </div>
-                      <span className="ml-auto text-xs text-slate-400">
-                        {new Date(review.created_at).toLocaleDateString('vi-VN')}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-600 leading-relaxed">{review.content}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <ReviewsSection productId={product.id} productName={product.name} />
       )}
     </div>
   )
