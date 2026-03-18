@@ -65,18 +65,28 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="email@example.com" className="input h-11" autoFocus />
             </div>
+
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Mật khẩu</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-semibold text-slate-700">Mật khẩu</label>
+                <Link href="/forgot-password"
+                  className="text-xs font-semibold hover:underline transition-colors"
+                  style={{ color: '#2563EB' }}>
+                  Quên mật khẩu?
+                </Link>
+              </div>
               <div className="relative">
                 <input type={showPass ? 'text' : 'password'} required value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••" className="input h-11 pr-11" />
                 <button type="button" onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }}>
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors hover:text-slate-600"
+                  style={{ color: '#94A3B8' }}>
                   {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </div>
             </div>
+
             <button type="submit" disabled={loading}
               className="btn-primary w-full justify-center py-3 text-base disabled:opacity-60">
               {loading ? (
