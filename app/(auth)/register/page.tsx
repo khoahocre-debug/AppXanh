@@ -26,6 +26,12 @@ export default function RegisterPage() {
       toast.error('Đăng ký thất bại', { description: error.message })
       setLoading(false)
     } else {
+      // Send welcome email
+fetch('/api/send-welcome', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: form.email, name: form.name }),
+}).catch(() => {})
       toast.success('Đăng ký thành công! Vui lòng đăng nhập.')
       window.location.href = '/login'
     }

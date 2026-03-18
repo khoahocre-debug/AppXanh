@@ -118,7 +118,23 @@ export default function CheckoutPage() {
       }))
 
       await supabase.from('order_items').insert(orderItems)
-
+// Send order confirmation email
+fetch('/api/send-order', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: form.customer_email,
+    customerName: form.customer_name,
+    orderCode: order.order_code,
+    total: totalAmount,
+    items: items.map(item => ({
+      name: item.product.name,
+      variant: item.variant?.option_value ?? null,
+      quantity: item.quantity,
+      price: item.variant?.price ?? item.product.price,
+    })),
+  }),
+}).catch(() => {}) // silent fail
       clearCart()
       toast.success('Đặt hàng thành công!')
 
