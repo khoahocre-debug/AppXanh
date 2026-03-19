@@ -2,8 +2,18 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Hướng Dẫn Mua Hàng | App Xanh',
-  description: 'Hướng dẫn mua tài khoản premium tại App Xanh. Quy trình đặt hàng, thanh toán VietQR, nhận tài khoản và chính sách bảo hành.',
+  title: 'Hướng Dẫn Mua Hàng & Sử Dụng',
+  description: 'Hướng dẫn mua tài khoản premium tại XanhSoft. Quy trình đặt hàng, thanh toán VietQR, nhận tài khoản và chính sách bảo hành chi tiết. Hỗ trợ Zalo 8:00–22:00.',
+  keywords: ['hướng dẫn mua tài khoản', 'thanh toán vietqr', 'bảo hành tài khoản premium', 'xanhsoft hướng dẫn'],
+  alternates: { canonical: 'https://xanhsoft.com/guides' },
+  openGraph: {
+    title: 'Hướng Dẫn Mua Hàng & Sử Dụng | XanhSoft',
+    description: 'Hướng dẫn đặt hàng, thanh toán và nhận tài khoản premium tại XanhSoft.',
+    url: 'https://xanhsoft.com/guides',
+    siteName: 'XanhSoft',
+    locale: 'vi_VN',
+    type: 'website',
+  },
 }
 
 const FAQS = [

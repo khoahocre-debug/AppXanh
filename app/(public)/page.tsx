@@ -1,7 +1,15 @@
+import Script from 'next/script'
 import { createClient } from '@/lib/supabase/server'
 import { formatPrice, discountPercent } from '@/lib/utils'
 import Link from 'next/link'
 import { ReviewsCarousel } from '@/components/ReviewsCarousel'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'XanhSoft - Shop Tài Khoản Premium Giá Rẻ',
+  description: 'Mua tài khoản ChatGPT, Claude, Canva, Coursera và 100+ app premium tại XanhSoft. Tiết kiệm đến 90% so với mua trực tiếp. Giao ngay sau khi thanh toán!',
+  alternates: { canonical: 'https://xanhsoft.com' },
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -12,17 +20,69 @@ export default async function HomePage() {
       .order('created_at', { ascending: false }).limit(6),
     supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
   ])
+
   return (
-    <div className="overflow-x-hidden">
-      <HeroSection />
-      <MarqueSection />
-      <CategoriesSection categories={categories ?? []} />
-      <FeaturedProducts products={products ?? []} />
-      <WhySection />
-      <HowItWorksSection />
-      <ReviewsSectionWrapper />
-      <CtaSection />
-    </div>
+    <>
+      <Script
+        id="schema-org"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@graph': [
+              {
+                '@type': 'WebSite',
+                '@id': 'https://xanhsoft.com/#website',
+                url: 'https://xanhsoft.com',
+                name: 'XanhSoft',
+                description: 'Shop Tài Khoản Premium Giá Rẻ',
+                potentialAction: {
+                  '@type': 'SearchAction',
+                  target: { '@type': 'EntryPoint', urlTemplate: 'https://xanhsoft.com/shop?q={search_term_string}' },
+                  'query-input': 'required name=search_term_string',
+                },
+              },
+              {
+                '@type': 'Organization',
+                '@id': 'https://xanhsoft.com/#organization',
+                name: 'XanhSoft',
+                url: 'https://xanhsoft.com',
+                logo: { '@type': 'ImageObject', url: 'https://xanhsoft.com/logo.png' },
+                contactPoint: {
+                  '@type': 'ContactPoint',
+                  telephone: '+84-888-993-991',
+                  contactType: 'customer service',
+                  availableLanguage: 'Vietnamese',
+                  hoursAvailable: 'Mo-Su 08:00-22:00',
+                },
+                sameAs: ['https://facebook.com', 'https://t.me'],
+              },
+              {
+                '@type': 'Store',
+                '@id': 'https://xanhsoft.com/#store',
+                name: 'XanhSoft - Shop Tài Khoản Premium',
+                url: 'https://xanhsoft.com',
+                description: 'Mua tài khoản ChatGPT, Claude, Canva, Coursera và 100+ app premium. Tiết kiệm đến 90%.',
+                priceRange: '25.000₫ - 999.000₫',
+                currenciesAccepted: 'VND',
+                paymentAccepted: 'Bank Transfer',
+                areaServed: 'VN',
+              },
+            ],
+          }),
+        }}
+      />
+      <div className="overflow-x-hidden">
+        <HeroSection />
+        <MarqueSection />
+        <CategoriesSection categories={categories ?? []} />
+        <FeaturedProducts products={products ?? []} />
+        <WhySection />
+        <HowItWorksSection />
+        <ReviewsSectionWrapper />
+        <CtaSection />
+      </div>
+    </>
   )
 }
 
@@ -103,7 +163,6 @@ function HeroSection() {
         @keyframes floatE { 0%,100%{transform:translateY(0px) rotate(-1.5deg)} 50%{transform:translateY(-20px) rotate(1.5deg)} }
         @keyframes floatF { 0%,100%{transform:translateY(0px) rotate(2.5deg)} 50%{transform:translateY(-16px) rotate(-1deg)} }
         @keyframes pulseBadge { 0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,0.3)} 50%{box-shadow:0 0 0 12px rgba(37,99,235,0)} }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
         @keyframes gradShift {
           0%{background-position:0% 50%}
           50%{background-position:100% 50%}
@@ -121,12 +180,10 @@ function HeroSection() {
         .deal-card:hover { transform: translateY(-6px) scale(1.03); box-shadow: 0 20px 40px rgba(37,99,235,0.15); }
       `}</style>
 
-      {/* Background blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute" style={{ top: '-80px', right: '-80px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', borderRadius: '50%' }} />
         <div className="absolute" style={{ bottom: '-60px', left: '-60px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(8,145,178,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
         <div className="absolute" style={{ top: '40%', left: '35%', width: '600px', height: '300px', background: 'radial-gradient(circle, rgba(22,163,74,0.06) 0%, transparent 70%)', borderRadius: '50%' }} />
-        {/* Decorative circles */}
         <div className="absolute" style={{ top: '12%', right: '22%', width: '80px', height: '80px', border: '2px dashed rgba(37,99,235,0.15)', borderRadius: '50%', animation: 'floatA 6s ease-in-out infinite' }} />
         <div className="absolute" style={{ bottom: '20%', right: '8%', width: '48px', height: '48px', background: 'rgba(37,99,235,0.08)', borderRadius: '50%', animation: 'floatB 4.5s ease-in-out infinite' }} />
         <div className="absolute" style={{ top: '60%', left: '5%', width: '32px', height: '32px', background: 'rgba(22,163,74,0.1)', borderRadius: '6px', transform: 'rotate(30deg)', animation: 'floatC 5s ease-in-out infinite' }} />
@@ -134,10 +191,7 @@ function HeroSection() {
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-8 py-16 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
-
-          {/* LEFT */}
           <div>
-            {/* Live badge */}
             <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-7 text-sm font-semibold"
               style={{ background: 'rgba(255,255,255,0.85)', border: '1.5px solid #BFDBFE', color: '#1D4ED8', animation: 'pulseBadge 2.5s ease-in-out infinite', backdropFilter: 'blur(8px)' }}>
               <span className="relative flex h-2 w-2">
@@ -147,7 +201,6 @@ function HeroSection() {
               Đang có {deals.length} deal hot · Cập nhật liên tục
             </div>
 
-            {/* Headline */}
             <h1 className="font-black leading-[1.1] mb-5 text-slate-900"
               style={{ fontSize: 'clamp(2rem, 4.5vw, 3.5rem)', letterSpacing: '-0.03em' }}>
               Tài Khoản Premium<br />
@@ -158,10 +211,10 @@ function HeroSection() {
             <p className="text-lg leading-relaxed mb-8 text-slate-600" style={{ maxWidth: '500px' }}>
               <strong>ChatGPT, Claude, Canva, Coursera</strong> và 100+ app premium. Tiết kiệm đến{' '}
               <span className="font-black" style={{ color: '#2563EB' }}>90%</span>{' '}
-              so với mua trực tiếp. <span className="font-semibold text-slate-700">Giao ngay sau khi thanh toán!</span>
+              so với mua trực tiếp.{' '}
+              <span className="font-semibold text-slate-700">Giao ngay sau khi thanh toán!</span>
             </p>
 
-            {/* Trust pills */}
             <div className="flex flex-wrap gap-2 mb-9">
               {[
                 { icon: '⚡', text: 'Giao trong 5 phút', c: '#2563EB', bg: '#EFF6FF' },
@@ -177,7 +230,6 @@ function HeroSection() {
               ))}
             </div>
 
-            {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-3 mb-12">
               <Link href="/shop"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:opacity-90 active:scale-95"
@@ -191,7 +243,6 @@ function HeroSection() {
               </a>
             </div>
 
-            {/* Stats row */}
             <div className="flex items-center gap-8 pt-8" style={{ borderTop: '1.5px solid rgba(37,99,235,0.12)' }}>
               {[
                 { num: '5.000+', label: 'khách hàng', icon: <IconUsers /> },
@@ -209,7 +260,6 @@ function HeroSection() {
             </div>
           </div>
 
-          {/* RIGHT — floating deal cards */}
           <div className="hidden lg:block relative" style={{ height: '520px' }}>
             {deals.map((deal, i) => {
               const positions = [
@@ -232,20 +282,15 @@ function HeroSection() {
                     backdropFilter: 'blur(16px)',
                     animation: `${pos.anim} ${4 + i * 0.4}s ease-in-out ${pos.delay} infinite`,
                   }}>
-                  {/* Top color bar */}
                   <div className="absolute top-0 left-4 right-4 h-0.5 rounded-full" style={{ background: deal.color }} />
-
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                      style={{ background: deal.bg }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style={{ background: deal.bg }}>
                       {deal.emoji}
                     </div>
-                    <span className="text-xs font-black px-2.5 py-1 rounded-xl"
-                      style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                    <span className="text-xs font-black px-2.5 py-1 rounded-xl" style={{ background: '#FEE2E2', color: '#991B1B' }}>
                       -{deal.pct}%
                     </span>
                   </div>
-
                   <p className="font-bold text-slate-900 text-sm mb-1">{deal.name}</p>
                   <div className="flex items-center justify-between">
                     <div>
@@ -260,8 +305,6 @@ function HeroSection() {
                 </div>
               )
             })}
-
-            {/* Center badge */}
             <div className="absolute" style={{ top: '45%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 10 }}>
               <div className="px-5 py-3 rounded-2xl font-bold text-sm text-white flex items-center gap-2 whitespace-nowrap"
                 style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 24px rgba(37,99,235,0.4)', animation: 'floatB 3s ease-in-out infinite' }}>
@@ -278,16 +321,10 @@ function HeroSection() {
 // ── MARQUEE ───────────────────────────────────────────────
 function MarqueSection() {
   const items = [
-    '⚡ ChatGPT Plus −84%',
-    '🎨 Canva Pro −89%',
-    '🎓 Coursera Plus −73%',
-    '✨ Claude Pro −77%',
-    '▶️ YouTube Premium −44%',
-    '💻 GitHub Copilot −80%',
-    '📱 CapCut Pro −87%',
-    '🤖 ChatGPT Go −78%',
+    '⚡ ChatGPT Plus −84%', '🎨 Canva Pro −89%', '🎓 Coursera Plus −73%',
+    '✨ Claude Pro −77%', '▶️ YouTube Premium −44%', '💻 GitHub Copilot −80%',
+    '📱 CapCut Pro −87%', '🤖 ChatGPT Go −78%',
   ]
-
   return (
     <div className="overflow-hidden py-4" style={{ background: 'linear-gradient(90deg, #1e40af, #0891b2)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
       <style>{`
@@ -385,7 +422,6 @@ function FeaturedProducts({ products }: { products: any[] }) {
           </div>
           <Link href="/shop" className="text-sm font-semibold hover:underline" style={{ color: '#2563EB' }}>Xem thêm →</Link>
         </div>
-
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
           {products.map(product => {
             const price = product.price
@@ -452,7 +488,6 @@ function FeaturedProducts({ products }: { products: any[] }) {
             )
           })}
         </div>
-
         <div className="text-center mt-8">
           <Link href="/shop" className="btn-primary px-8 py-3.5 text-base"
             style={{ boxShadow: '0 4px 16px rgba(37,99,235,0.25)' }}>
@@ -496,7 +531,7 @@ function WhySection() {
     <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 100%)' }}>
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-3">Tại Sao Chọn Xanh Soft</p>
+          <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-3">Tại Sao Chọn XanhSoft</p>
           <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Mua app xịn, giá không xịn</h2>
           <p className="text-blue-100 max-w-xl mx-auto">Hàng nghìn khách hàng đã tiết kiệm hàng triệu đồng mỗi năm</p>
         </div>

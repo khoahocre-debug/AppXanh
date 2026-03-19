@@ -1,9 +1,20 @@
 import { Suspense } from 'react'
 import { ShopContent } from '@/components/shop/ShopContent'
+import type { Metadata } from 'next'
 
-export const metadata = {
-  title: 'Sản Phẩm',
-  description: 'Mua tài khoản ChatGPT, Claude, Canva, YouTube Premium giá rẻ nhất',
+export const metadata: Metadata = {
+  title: 'Tất Cả Sản Phẩm Premium Giá Rẻ',
+  description: 'Khám phá 100+ tài khoản premium giá rẻ tại XanhSoft: ChatGPT Plus, Claude Pro, Canva Pro, Coursera Plus, YouTube Premium. Tiết kiệm đến 90%. Giao ngay sau thanh toán!',
+  keywords: ['mua tài khoản chatgpt', 'claude pro giá rẻ', 'canva pro', 'coursera plus', 'youtube premium giá rẻ', 'tài khoản premium việt nam'],
+  alternates: { canonical: 'https://xanhsoft.com/shop' },
+  openGraph: {
+    title: 'Shop Tài Khoản Premium Giá Rẻ | XanhSoft',
+    description: '100+ tài khoản premium giá rẻ nhất Việt Nam. Giao ngay sau thanh toán!',
+    url: 'https://xanhsoft.com/shop',
+    siteName: 'XanhSoft',
+    locale: 'vi_VN',
+    type: 'website',
+  },
 }
 
 export default function ShopPage() {

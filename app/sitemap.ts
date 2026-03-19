@@ -6,16 +6,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: products } = await supabase
     .from('products').select('slug, updated_at').eq('status', 'active')
 
-  const productUrls = products?.map(p => ({
+  const now = new Date()
+
+  const productUrls: MetadataRoute.Sitemap = (products ?? []).map(p => ({
     url: `https://xanhsoft.com/product/${p.slug}`,
-    lastModified: new Date(p.updated_at),
-    changeFrequency: 'weekly' as const,
+    lastModified: p.updated_at ? new Date(p.updated_at) : now,
+    changeFrequency: 'weekly',
     priority: 0.8,
-  })) ?? []
+  }))
 
   return [
-    { url: 'https://xanhsoft.com', lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
-    { url: 'https://xanhsoft.com/shop', lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+    { url: 'https://xanhsoft.com', lastModified: now, changeFrequency: 'daily', priority: 1.0 },
+    { url: 'https://xanhsoft.com/shop', lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: 'https://xanhsoft.com/guides', lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     ...productUrls,
   ]
 }
