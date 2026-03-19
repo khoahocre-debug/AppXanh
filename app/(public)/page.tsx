@@ -80,79 +80,98 @@ const IconZap = () => (
 // ── HERO ──────────────────────────────────────────────────
 function HeroSection() {
   const deals = [
-    { name: 'ChatGPT Plus', saved: '521.000₫', pct: '84', color: '#10A37F' },
-    { name: 'Claude Pro', saved: '1.150.000₫', pct: '77', color: '#CC785C' },
-    { name: 'Canva Pro', saved: '1.250.000₫', pct: '89', color: '#7D2AE8' },
-    { name: 'Coursera Plus', saved: '1.991.000₫', pct: '73', color: '#0056D2' },
-    { name: 'YouTube Premium', saved: '400.000₫', pct: '44', color: '#FF0000' },
-    { name: 'GitHub Copilot', saved: '720.000₫', pct: '80', color: '#24292E' },
+    { name: 'ChatGPT Plus', saved: '521.000₫', pct: '84', emoji: '🤖', color: '#10A37F', bg: '#E8F7F3' },
+    { name: 'Claude Pro', saved: '1.150.000₫', pct: '77', emoji: '✨', color: '#CC785C', bg: '#FDF1EC' },
+    { name: 'Canva Pro', saved: '1.250.000₫', pct: '89', emoji: '🎨', color: '#7D2AE8', bg: '#F3EEFF' },
+    { name: 'Coursera Plus', saved: '1.991.000₫', pct: '73', emoji: '🎓', color: '#0056D2', bg: '#E8F0FE' },
+    { name: 'YouTube Premium', saved: '400.000₫', pct: '44', emoji: '▶️', color: '#FF0000', bg: '#FFF0F0' },
+    { name: 'GitHub Copilot', saved: '720.000₫', pct: '80', emoji: '💻', color: '#24292E', bg: '#F0F0F0' },
   ]
 
   return (
-    <section className="relative overflow-hidden" style={{ background: '#0A0F1E', minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
-      {/* Animated mesh background */}
+    <section className="relative overflow-hidden" style={{
+      background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 30%, #E0F2FE 60%, #F0FDF4 100%)',
+      minHeight: '92vh',
+      display: 'flex',
+      alignItems: 'center',
+    }}>
+      <style>{`
+        @keyframes floatA { 0%,100%{transform:translateY(0px) rotate(-1deg)} 50%{transform:translateY(-18px) rotate(1deg)} }
+        @keyframes floatB { 0%,100%{transform:translateY(0px) rotate(2deg)} 50%{transform:translateY(-14px) rotate(-1deg)} }
+        @keyframes floatC { 0%,100%{transform:translateY(0px) rotate(-2deg)} 50%{transform:translateY(-22px) rotate(2deg)} }
+        @keyframes floatD { 0%,100%{transform:translateY(0px) rotate(1deg)} 50%{transform:translateY(-12px) rotate(-2deg)} }
+        @keyframes floatE { 0%,100%{transform:translateY(0px) rotate(-1.5deg)} 50%{transform:translateY(-20px) rotate(1.5deg)} }
+        @keyframes floatF { 0%,100%{transform:translateY(0px) rotate(2.5deg)} 50%{transform:translateY(-16px) rotate(-1deg)} }
+        @keyframes pulseBadge { 0%,100%{box-shadow:0 0 0 0 rgba(37,99,235,0.3)} 50%{box-shadow:0 0 0 12px rgba(37,99,235,0)} }
+        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes gradShift {
+          0%{background-position:0% 50%}
+          50%{background-position:100% 50%}
+          100%{background-position:0% 50%}
+        }
+        .hero-grad-text {
+          background: linear-gradient(90deg, #1D4ED8, #0891B2, #2563EB, #06B6D4, #1D4ED8);
+          background-size: 300% 100%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: gradShift 4s ease infinite;
+        }
+        .deal-card { transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+        .deal-card:hover { transform: translateY(-6px) scale(1.03); box-shadow: 0 20px 40px rgba(37,99,235,0.15); }
+      `}</style>
+
+      {/* Background blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Glow orbs */}
-        <div className="absolute" style={{ top: '-10%', left: '-5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)', borderRadius: '50%' }} />
-        <div className="absolute" style={{ top: '20%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(8,145,178,0.12) 0%, transparent 70%)', borderRadius: '50%' }} />
-        <div className="absolute" style={{ bottom: '-10%', left: '30%', width: '700px', height: '400px', background: 'radial-gradient(circle, rgba(22,163,74,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
-        {/* Grid lines */}
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-        }} />
+        <div className="absolute" style={{ top: '-80px', right: '-80px', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div className="absolute" style={{ bottom: '-60px', left: '-60px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(8,145,178,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div className="absolute" style={{ top: '40%', left: '35%', width: '600px', height: '300px', background: 'radial-gradient(circle, rgba(22,163,74,0.06) 0%, transparent 70%)', borderRadius: '50%' }} />
+        {/* Decorative circles */}
+        <div className="absolute" style={{ top: '12%', right: '22%', width: '80px', height: '80px', border: '2px dashed rgba(37,99,235,0.15)', borderRadius: '50%', animation: 'floatA 6s ease-in-out infinite' }} />
+        <div className="absolute" style={{ bottom: '20%', right: '8%', width: '48px', height: '48px', background: 'rgba(37,99,235,0.08)', borderRadius: '50%', animation: 'floatB 4.5s ease-in-out infinite' }} />
+        <div className="absolute" style={{ top: '60%', left: '5%', width: '32px', height: '32px', background: 'rgba(22,163,74,0.1)', borderRadius: '6px', transform: 'rotate(30deg)', animation: 'floatC 5s ease-in-out infinite' }} />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 md:px-8 py-20 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-8 py-16 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 items-center">
 
           {/* LEFT */}
           <div>
             {/* Live badge */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-8 text-sm font-semibold"
-              style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.35)', color: '#93C5FD' }}>
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-7 text-sm font-semibold"
+              style={{ background: 'rgba(255,255,255,0.85)', border: '1.5px solid #BFDBFE', color: '#1D4ED8', animation: 'pulseBadge 2.5s ease-in-out infinite', backdropFilter: 'blur(8px)' }}>
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#22C55E' }} />
                 <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#22C55E' }} />
               </span>
-              Đang có {deals.length} deal hot — Giá cập nhật liên tục
+              Đang có {deals.length} deal hot · Cập nhật liên tục
             </div>
 
             {/* Headline */}
-            <h1 className="font-black leading-[1.08] mb-6" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', letterSpacing: '-0.03em' }}>
-              <span style={{ color: 'white' }}>Tài Khoản</span>
-              <br />
-              <span style={{
-                background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #10B981 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>Premium Xịn</span>
-              <br />
-              <span style={{ color: 'white' }}>Giá </span>
-              <span style={{
-                background: 'linear-gradient(90deg, #FCD34D, #F97316)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>Không Xịn</span>
+            <h1 className="font-black leading-[1.1] mb-5 text-slate-900"
+              style={{ fontSize: 'clamp(2rem, 4.5vw, 3.5rem)', letterSpacing: '-0.03em' }}>
+              Tài Khoản Premium<br />
+              Bản Quyền{' '}
+              <span className="hero-grad-text">Giá Rẻ</span>
             </h1>
 
-            <p className="text-lg leading-relaxed mb-8" style={{ color: '#94A3B8', maxWidth: '480px' }}>
-              ChatGPT, Claude, Canva, Coursera và 100+ app premium. Tiết kiệm đến <span style={{ color: '#FCD34D', fontWeight: 700 }}>90%</span> so với mua trực tiếp. Giao tự động trong vài phút.
+            <p className="text-lg leading-relaxed mb-8 text-slate-600" style={{ maxWidth: '500px' }}>
+              <strong>ChatGPT, Claude, Canva, Coursera</strong> và 100+ app premium. Tiết kiệm đến{' '}
+              <span className="font-black" style={{ color: '#2563EB' }}>90%</span>{' '}
+              so với mua trực tiếp. <span className="font-semibold text-slate-700">Giao ngay sau khi thanh toán!</span>
             </p>
 
             {/* Trust pills */}
-            <div className="flex flex-wrap gap-2 mb-10">
+            <div className="flex flex-wrap gap-2 mb-9">
               {[
-                { icon: '⚡', text: 'Giao trong 5 phút' },
-                { icon: '🛡️', text: 'Bảo hành 100%' },
-                { icon: '🔒', text: 'Tài khoản riêng tư' },
-                { icon: '💬', text: 'Hỗ trợ Zalo 24/7' },
+                { icon: '⚡', text: 'Giao trong 5 phút', c: '#2563EB', bg: '#EFF6FF' },
+                { icon: '🛡️', text: 'Bảo hành 100%', c: '#16A34A', bg: '#F0FDF4' },
+                { icon: '🔒', text: 'Tài khoản riêng tư', c: '#7C3AED', bg: '#F5F3FF' },
+                { icon: '💬', text: 'Hỗ trợ Zalo 24/7', c: '#D97706', bg: '#FFFBEB' },
               ].map(item => (
                 <span key={item.text}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#CBD5E1' }}>
+                  style={{ background: item.bg, color: item.c, border: `1px solid ${item.c}22` }}>
                   {item.icon} {item.text}
                 </span>
               ))}
@@ -162,75 +181,96 @@ function HeroSection() {
             <div className="flex flex-col sm:flex-row gap-3 mb-12">
               <Link href="/shop"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:opacity-90 active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 32px rgba(37,99,235,0.35)' }}>
-                Xem Tất Cả Deal →
+                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 32px rgba(37,99,235,0.3)' }}>
+                🛍️ Xem Tất Cả Deal →
               </Link>
               <a href="https://zalo.me/0888993991"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:bg-white/10"
-                style={{ border: '1px solid rgba(255,255,255,0.15)', color: '#E2E8F0' }}>
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:bg-blue-50"
+                style={{ border: '2px solid #BFDBFE', color: '#1D4ED8', background: 'rgba(255,255,255,0.8)' }}>
                 💬 Tư Vấn Miễn Phí
               </a>
             </div>
 
             {/* Stats row */}
-            <div className="flex items-center gap-8 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center gap-8 pt-8" style={{ borderTop: '1.5px solid rgba(37,99,235,0.12)' }}>
               {[
-                { num: '5.000+', label: 'khách hàng' },
-                { num: '99%', label: 'hài lòng' },
-                { num: '100+', label: 'sản phẩm' },
+                { num: '5.000+', label: 'khách hàng', icon: <IconUsers /> },
+                { num: '99%', label: 'hài lòng', icon: <IconStar /> },
+                { num: '100+', label: 'sản phẩm', icon: <IconBox /> },
               ].map(s => (
-                <div key={s.label}>
-                  <p className="text-2xl font-black" style={{ color: 'white' }}>{s.num}</p>
-                  <p className="text-xs" style={{ color: '#64748B' }}>{s.label}</p>
+                <div key={s.label} className="flex items-center gap-2">
+                  <div>{s.icon}</div>
+                  <div>
+                    <p className="text-xl font-black text-slate-900 leading-none">{s.num}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* RIGHT — Deal cards grid */}
-          <div className="hidden lg:grid grid-cols-2 gap-4">
-            {deals.map((deal, i) => (
-              <div key={deal.name}
-                className="rounded-2xl p-5 relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  backdropFilter: 'blur(12px)',
-                  animationDelay: `${i * 0.1}s`,
-                }}>
-                {/* Color accent */}
-                <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ background: deal.color }} />
-                <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full opacity-10" style={{ background: deal.color }} />
+          {/* RIGHT — floating deal cards */}
+          <div className="hidden lg:block relative" style={{ height: '520px' }}>
+            {deals.map((deal, i) => {
+              const positions = [
+                { top: '0%', left: '10%', anim: 'floatA', delay: '0s' },
+                { top: '0%', right: '0%', anim: 'floatB', delay: '0.6s' },
+                { top: '34%', left: '0%', anim: 'floatC', delay: '0.3s' },
+                { top: '34%', right: '8%', anim: 'floatD', delay: '0.9s' },
+                { top: '66%', left: '8%', anim: 'floatE', delay: '0.15s' },
+                { top: '66%', right: '2%', anim: 'floatF', delay: '0.75s' },
+              ]
+              const pos = positions[i]
+              return (
+                <div key={deal.name}
+                  className="deal-card absolute rounded-2xl px-5 py-4 w-56"
+                  style={{
+                    ...pos,
+                    background: 'rgba(255,255,255,0.92)',
+                    border: '1.5px solid rgba(37,99,235,0.12)',
+                    boxShadow: '0 8px 32px rgba(37,99,235,0.1)',
+                    backdropFilter: 'blur(16px)',
+                    animation: `${pos.anim} ${4 + i * 0.4}s ease-in-out ${pos.delay} infinite`,
+                  }}>
+                  {/* Top color bar */}
+                  <div className="absolute top-0 left-4 right-4 h-0.5 rounded-full" style={{ background: deal.color }} />
 
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black"
-                    style={{ background: deal.color + '22', border: `1px solid ${deal.color}44` }}>
-                    <span style={{ fontSize: '18px' }}>
-                      {deal.name.includes('ChatGPT') ? '🤖' :
-                       deal.name.includes('Claude') ? '✨' :
-                       deal.name.includes('Canva') ? '🎨' :
-                       deal.name.includes('Coursera') ? '🎓' :
-                       deal.name.includes('YouTube') ? '▶️' : '💻'}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                      style={{ background: deal.bg }}>
+                      {deal.emoji}
+                    </div>
+                    <span className="text-xs font-black px-2.5 py-1 rounded-xl"
+                      style={{ background: '#FEE2E2', color: '#991B1B' }}>
+                      -{deal.pct}%
                     </span>
                   </div>
-                  <span className="text-xs font-black px-2.5 py-1 rounded-lg"
-                    style={{ background: 'rgba(239,68,68,0.15)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.2)' }}>
-                    -{deal.pct}%
-                  </span>
-                </div>
 
-                <p className="font-bold mb-1" style={{ color: 'white', fontSize: '14px' }}>{deal.name}</p>
-                <p className="text-xs" style={{ color: '#64748B' }}>Tiết kiệm</p>
-                <p className="font-black mt-0.5" style={{ color: '#34D399', fontSize: '15px' }}>{deal.saved}</p>
+                  <p className="font-bold text-slate-900 text-sm mb-1">{deal.name}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-400">Tiết kiệm</p>
+                      <p className="font-black text-sm" style={{ color: deal.color }}>{deal.saved}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: '#22C55E' }} />
+                      <span className="text-xs text-slate-400">Còn hàng</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Center badge */}
+            <div className="absolute" style={{ top: '45%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 10 }}>
+              <div className="px-5 py-3 rounded-2xl font-bold text-sm text-white flex items-center gap-2 whitespace-nowrap"
+                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 24px rgba(37,99,235,0.4)', animation: 'floatB 3s ease-in-out infinite' }}>
+                ⚡ Giao ngay!
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, transparent, rgba(10,15,30,0.8))' }} />
     </section>
   )
 }
@@ -453,27 +493,27 @@ function WhySection() {
     },
   ]
   return (
-    <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #0A0F1E 0%, #0f1f3d 100%)' }}>
+    <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 100%)' }}>
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#60A5FA' }}>Tại Sao Chọn Xanh Soft</p>
+          <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-3">Tại Sao Chọn Xanh Soft</p>
           <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Mua app xịn, giá không xịn</h2>
-          <p className="max-w-xl mx-auto" style={{ color: '#64748B' }}>Hàng nghìn khách hàng đã tiết kiệm hàng triệu đồng mỗi năm</p>
+          <p className="text-blue-100 max-w-xl mx-auto">Hàng nghìn khách hàng đã tiết kiệm hàng triệu đồng mỗi năm</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map(item => (
             <div key={item.title} className="rounded-2xl p-6 group hover:scale-[1.02] transition-all duration-200"
-              style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-sm"
                 style={{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }}>
                 {item.icon}
               </div>
               <div className="text-xs font-bold px-2.5 py-1 rounded-full mb-3 inline-block"
-                style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
+                style={{ background: 'rgba(255,255,255,0.15)', color: 'white' }}>
                 {item.highlight}
               </div>
-              <h3 className="font-bold text-lg mb-2 text-white">{item.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: '#64748B' }}>{item.desc}</p>
+              <h3 className="text-white font-bold text-lg mb-2">{item.title}</h3>
+              <p className="text-blue-100 text-sm leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -582,36 +622,35 @@ function ReviewsSectionWrapper() {
 // ── CTA ───────────────────────────────────────────────────
 function CtaSection() {
   return (
-    <section className="py-20 px-4" style={{ background: '#0A0F1E' }}>
+    <section className="py-20 bg-white px-4">
       <div className="max-w-4xl mx-auto">
         <div className="rounded-3xl p-10 md:p-14 text-center relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2942 50%, #0a1628 100%)', border: '1px solid rgba(37,99,235,0.3)' }}>
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, #3B82F6, transparent)' }} />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-15 pointer-events-none"
-            style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
+          style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 50%, #059669 100%)' }}>
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, white, transparent)' }} />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-10 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, white, transparent)' }} />
           <div className="relative">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold mb-5"
-              style={{ background: 'rgba(37,99,235,0.2)', color: '#93C5FD', border: '1px solid rgba(37,99,235,0.3)' }}>
+              style={{ background: 'rgba(255,255,255,0.15)', color: 'white' }}>
               ⚡ Giao hàng tự động 24/7
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Sẵn sàng tiết kiệm đến 90%?</h2>
-            <p className="text-lg mb-8 max-w-xl mx-auto" style={{ color: '#64748B' }}>
+            <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
               Hàng trăm sản phẩm premium đang chờ bạn với mức giá không thể tin được.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/shop"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 32px rgba(37,99,235,0.3)' }}>
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base bg-white hover:bg-blue-50 transition-all"
+                style={{ color: '#1D4ED8' }}>
                 Xem Sản Phẩm Ngay →
               </Link>
               <a href="https://zalo.me/0888993991"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:bg-white/5"
-                style={{ border: '1px solid rgba(255,255,255,0.15)', color: '#E2E8F0' }}>
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base border-2 border-white text-white hover:bg-white/10 transition-all">
                 💬 Chat Zalo Ngay
               </a>
             </div>
-            <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm" style={{ color: '#475569' }}>
+            <div className="mt-8 flex flex-wrap justify-center gap-6 text-blue-100 text-sm">
               {['✅ Miễn phí đăng ký', '⚡ Giao hàng tức thì', '🛡️ Bảo hành 100%', '💬 Hỗ trợ Zalo'].map(item => (
                 <span key={item}>{item}</span>
               ))}
