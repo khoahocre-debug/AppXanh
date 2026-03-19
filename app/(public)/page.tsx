@@ -8,13 +8,14 @@ export default async function HomePage() {
   const [{ data: products }, { data: categories }] = await Promise.all([
     supabase.from('products')
       .select(`*, categories(*), product_variants(*), product_images(*)`)
-      .eq('status', 'active').eq('featured', true)
+      .eq('status', 'active')
       .order('created_at', { ascending: false }).limit(6),
     supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
   ])
   return (
     <div className="overflow-x-hidden">
       <HeroSection />
+      <MarqueSection />
       <CategoriesSection categories={categories ?? []} />
       <FeaturedProducts products={products ?? []} />
       <WhySection />
@@ -25,6 +26,7 @@ export default async function HomePage() {
   )
 }
 
+// ── ICONS ─────────────────────────────────────────────────
 const IconUsers = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
     <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -77,159 +79,192 @@ const IconZap = () => (
 
 // ── HERO ──────────────────────────────────────────────────
 function HeroSection() {
-  const heroCards = [
-    {
-      name: 'ChatGPT Plus Business',
-      sub: 'GPT-5.2 · DALL-E · Sora',
-      price: 99000, oldPrice: 620000,
-      imgSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/ChatGPT-Logo.svg/960px-ChatGPT-Logo.svg.png',
-      imgClass: 'w-8 h-8 object-contain',
-      bg: '#E8F7F3',
-      style: { top: '0%', right: '0%', transform: 'rotate(2deg)', animation: 'float 3.2s ease-in-out infinite' },
-      width: 'w-72',
-      discount: '−84%',
-      discountStyle: { background: '#FEE2E2', color: '#991B1B' },
-    },
-    {
-      name: 'YouTube Premium 1 Năm',
-      sub: 'Không quảng cáo',
-      price: 500000, oldPrice: 900000,
-      imgSrc: 'https://upload.wikimedia.org/wikipedia/commons/f/f4/Youtube-logo-red.png',
-      imgClass: 'w-8 h-8 object-contain',
-      bg: '#FFF0F0',
-      style: { top: '37%', left: '0%', transform: 'rotate(-2.5deg)', animation: 'float 3.8s ease-in-out infinite', animationDelay: '0.4s' },
-      width: 'w-64',
-      discount: '−44%',
-      discountStyle: { background: '#DCFCE7', color: '#166534' },
-    },
-    {
-      name: 'Canva Pro 1 Năm',
-      sub: '100M+ templates',
-      price: 150000, oldPrice: 1400000,
-      imgSrc: 'https://static.vecteezy.com/system/resources/thumbnails/048/759/334/small/canva-transparent-icon-free-png.png',
-      imgClass: 'w-8 h-8 object-contain',
-      bg: '#F3EEFF',
-      style: { bottom: '2%', right: '0%', transform: 'rotate(1.5deg)', animation: 'float 4.2s ease-in-out infinite', animationDelay: '0.8s' },
-      width: 'w-60',
-      discount: '−89%',
-      discountStyle: { background: '#FEE2E2', color: '#991B1B' },
-    },
+  const deals = [
+    { name: 'ChatGPT Plus', saved: '521.000₫', pct: '84', color: '#10A37F' },
+    { name: 'Claude Pro', saved: '1.150.000₫', pct: '77', color: '#CC785C' },
+    { name: 'Canva Pro', saved: '1.250.000₫', pct: '89', color: '#7D2AE8' },
+    { name: 'Coursera Plus', saved: '1.991.000₫', pct: '73', color: '#0056D2' },
+    { name: 'YouTube Premium', saved: '400.000₫', pct: '44', color: '#FF0000' },
+    { name: 'GitHub Copilot', saved: '720.000₫', pct: '80', color: '#24292E' },
   ]
 
   return (
-    <section className="relative overflow-hidden py-20 md:py-28 px-4"
-      style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 30%, #f0fdf4 70%, #f8fafc 100%)' }}>
+    <section className="relative overflow-hidden" style={{ background: '#0A0F1E', minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+      {/* Animated mesh background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Glow orbs */}
+        <div className="absolute" style={{ top: '-10%', left: '-5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div className="absolute" style={{ top: '20%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(8,145,178,0.12) 0%, transparent 70%)', borderRadius: '50%' }} />
+        <div className="absolute" style={{ bottom: '-10%', left: '30%', width: '700px', height: '400px', background: 'radial-gradient(circle, rgba(22,163,74,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
+        {/* Grid lines */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
+      </div>
 
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full opacity-25 blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #3b82f6, transparent)' }} />
-      <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #06b6d4, transparent)' }} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-10 blur-3xl pointer-events-none"
-        style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)' }} />
+      <div className="relative max-w-7xl mx-auto px-4 md:px-8 py-20 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
-      <div className="relative max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* LEFT */}
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-sm font-semibold border"
-              style={{ background: 'rgba(255,255,255,0.85)', borderColor: '#BFDBFE', color: '#1D4ED8' }}>
+            {/* Live badge */}
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full mb-8 text-sm font-semibold"
+              style={{ background: 'rgba(37,99,235,0.15)', border: '1px solid rgba(37,99,235,0.35)', color: '#93C5FD' }}>
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#22C55E' }} />
-                <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: '#22C55E' }} />
+                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#22C55E' }} />
               </span>
-              Giao hàng tự động 24/7 — Không cần chờ đợi
+              Đang có {deals.length} deal hot — Giá cập nhật liên tục
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-5 text-slate-900">
-              Kho Tài Khoản<br />
-              Premium{' '}
-              <span className="gradient-text">Giá Xanh</span>
+            {/* Headline */}
+            <h1 className="font-black leading-[1.08] mb-6" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', letterSpacing: '-0.03em' }}>
+              <span style={{ color: 'white' }}>Tài Khoản</span>
+              <br />
+              <span style={{
+                background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 50%, #10B981 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>Premium Xịn</span>
+              <br />
+              <span style={{ color: 'white' }}>Giá </span>
+              <span style={{
+                background: 'linear-gradient(90deg, #FCD34D, #F97316)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>Không Xịn</span>
             </h1>
 
-            <div className="flex flex-wrap gap-2 mb-5">
+            <p className="text-lg leading-relaxed mb-8" style={{ color: '#94A3B8', maxWidth: '480px' }}>
+              ChatGPT, Claude, Canva, Coursera và 100+ app premium. Tiết kiệm đến <span style={{ color: '#FCD34D', fontWeight: 700 }}>90%</span> so với mua trực tiếp. Giao tự động trong vài phút.
+            </p>
+
+            {/* Trust pills */}
+            <div className="flex flex-wrap gap-2 mb-10">
               {[
-                { icon: '✓', text: 'Tài Khoản Ổn Định', color: '#16A34A' },
-                { icon: '⚡', text: 'Thanh toán có liền', color: '#2563EB' },
-                { icon: '🛡️', text: 'Bảo hành trọn gói', color: '#7C3AED' },
+                { icon: '⚡', text: 'Giao trong 5 phút' },
+                { icon: '🛡️', text: 'Bảo hành 100%' },
+                { icon: '🔒', text: 'Tài khoản riêng tư' },
+                { icon: '💬', text: 'Hỗ trợ Zalo 24/7' },
               ].map(item => (
-                <span key={item.text} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border"
-                  style={{ background: 'rgba(255,255,255,0.9)', borderColor: '#E2E8F0', color: '#1E293B' }}>
-                  <span style={{ color: item.color }}>{item.icon}</span> {item.text}
+                <span key={item.text}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#CBD5E1' }}>
+                  {item.icon} {item.text}
                 </span>
               ))}
             </div>
 
-            <p className="text-slate-600 text-lg leading-relaxed mb-8">
-              Mua <strong>ChatGPT Plus, Claude Pro, Canva, YouTube Premium</strong> và 100+ app premium.
-              Giá rẻ hơn đến <strong className="text-blue-600">90%</strong> so với mua trực tiếp.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/shop" className="btn-primary py-4 px-8 text-base justify-center"
-                style={{ boxShadow: '0 8px 24px rgba(37,99,235,0.3)' }}>
-                Xem Tất Cả Sản Phẩm →
+            {/* CTA */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-12">
+              <Link href="/shop"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:opacity-90 active:scale-95"
+                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 32px rgba(37,99,235,0.35)' }}>
+                Xem Tất Cả Deal →
               </Link>
-              <a href="https://zalo.me/0888993991" className="btn-outline py-4 px-8 text-base justify-center">
-                💬 Tư Vấn Zalo
+              <a href="https://zalo.me/0888993991"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:bg-white/10"
+                style={{ border: '1px solid rgba(255,255,255,0.15)', color: '#E2E8F0' }}>
+                💬 Tư Vấn Miễn Phí
               </a>
             </div>
+
+            {/* Stats row */}
+            <div className="flex items-center gap-8 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              {[
+                { num: '5.000+', label: 'khách hàng' },
+                { num: '99%', label: 'hài lòng' },
+                { num: '100+', label: 'sản phẩm' },
+              ].map(s => (
+                <div key={s.label}>
+                  <p className="text-2xl font-black" style={{ color: 'white' }}>{s.num}</p>
+                  <p className="text-xs" style={{ color: '#64748B' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Floating cards */}
-          <div className="hidden lg:block relative h-[480px]">
-            {heroCards.map((card) => (
-              <div key={card.name} className={`absolute bg-white rounded-2xl shadow-xl border border-slate-100 p-4 ${card.width}`}
-                style={card.style}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: card.bg }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={card.imgSrc} alt={card.name} className={card.imgClass} />
+          {/* RIGHT — Deal cards grid */}
+          <div className="hidden lg:grid grid-cols-2 gap-4">
+            {deals.map((deal, i) => (
+              <div key={deal.name}
+                className="rounded-2xl p-5 relative overflow-hidden hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  backdropFilter: 'blur(12px)',
+                  animationDelay: `${i * 0.1}s`,
+                }}>
+                {/* Color accent */}
+                <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ background: deal.color }} />
+                <div className="absolute -bottom-6 -right-6 w-20 h-20 rounded-full opacity-10" style={{ background: deal.color }} />
+
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black"
+                    style={{ background: deal.color + '22', border: `1px solid ${deal.color}44` }}>
+                    <span style={{ fontSize: '18px' }}>
+                      {deal.name.includes('ChatGPT') ? '🤖' :
+                       deal.name.includes('Claude') ? '✨' :
+                       deal.name.includes('Canva') ? '🎨' :
+                       deal.name.includes('Coursera') ? '🎓' :
+                       deal.name.includes('YouTube') ? '▶️' : '💻'}
+                    </span>
                   </div>
-                  <div>
-                    <p className="font-bold text-slate-900 text-sm leading-tight">{card.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{card.sub}</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(card.price)}</span>
-                    <span className="text-xs text-slate-400 line-through ml-2">{formatPrice(card.oldPrice)}</span>
-                  </div>
-                  <span className="text-xs font-bold px-2 py-1 rounded-lg" style={card.discountStyle}>
-                    {card.discount}
+                  <span className="text-xs font-black px-2.5 py-1 rounded-lg"
+                    style={{ background: 'rgba(239,68,68,0.15)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    -{deal.pct}%
                   </span>
                 </div>
+
+                <p className="font-bold mb-1" style={{ color: 'white', fontSize: '14px' }}>{deal.name}</p>
+                <p className="text-xs" style={{ color: '#64748B' }}>Tiết kiệm</p>
+                <p className="font-black mt-0.5" style={{ color: '#34D399', fontSize: '15px' }}>{deal.saved}</p>
               </div>
             ))}
-
-            <div className="absolute z-10" style={{ top: '46%', right: '28%', animation: 'float 2.6s ease-in-out infinite', animationDelay: '0.2s' }}>
-              <div className="px-4 py-2.5 rounded-2xl font-bold shadow-xl text-sm flex items-center gap-2 text-white"
-                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
-                ⚡ Giao ngay!
-              </div>
-            </div>
           </div>
         </div>
-
-        {/* Stats */}
-        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { value: '5,000+', label: 'Khách hàng tin dùng', bg: '#EFF6FF', icon: <IconUsers /> },
-            { value: '100+', label: 'Sản phẩm premium', bg: '#F5F3FF', icon: <IconBox /> },
-            { value: '99%', label: 'Tỷ lệ hài lòng', bg: '#FFFBEB', icon: <IconStar /> },
-            { value: '< 5 phút', label: 'Thời gian giao hàng', bg: '#F0FDF4', icon: <IconClock /> },
-          ].map(stat => (
-            <div key={stat.label} className="bg-white/90 backdrop-blur rounded-2xl p-4 text-center border border-slate-100 shadow-sm hover:shadow-md transition-all">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: stat.bg }}>
-                {stat.icon}
-              </div>
-              <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{stat.label}</p>
-            </div>
-          ))}
-        </div>
       </div>
+
+      {/* Bottom gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, transparent, rgba(10,15,30,0.8))' }} />
     </section>
+  )
+}
+
+// ── MARQUEE ───────────────────────────────────────────────
+function MarqueSection() {
+  const items = [
+    '⚡ ChatGPT Plus −84%',
+    '🎨 Canva Pro −89%',
+    '🎓 Coursera Plus −73%',
+    '✨ Claude Pro −77%',
+    '▶️ YouTube Premium −44%',
+    '💻 GitHub Copilot −80%',
+    '📱 CapCut Pro −87%',
+    '🤖 ChatGPT Go −78%',
+  ]
+
+  return (
+    <div className="overflow-hidden py-4" style={{ background: 'linear-gradient(90deg, #1e40af, #0891b2)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      <style>{`
+        @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+        .marquee-track { display: flex; width: max-content; animation: marquee 20s linear infinite; }
+        .marquee-track:hover { animation-play-state: paused; }
+      `}</style>
+      <div className="marquee-track">
+        {[...items, ...items].map((item, i) => (
+          <span key={i} className="inline-flex items-center gap-2 px-6 text-sm font-bold whitespace-nowrap"
+            style={{ color: 'rgba(255,255,255,0.9)' }}>
+            {item}
+            <span style={{ color: 'rgba(255,255,255,0.3)' }}>•</span>
+          </span>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -306,7 +341,7 @@ function FeaturedProducts({ products }: { products: any[] }) {
         <div className="flex items-end justify-between mb-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#2563EB' }}>Nổi Bật</p>
-            <h2 className="text-3xl font-black text-slate-900">Sản phẩm bán chạy nhất</h2>
+            <h2 className="text-3xl font-black text-slate-900">Deal đang hot nhất</h2>
           </div>
           <Link href="/shop" className="text-sm font-semibold hover:underline" style={{ color: '#2563EB' }}>Xem thêm →</Link>
         </div>
@@ -319,7 +354,7 @@ function FeaturedProducts({ products }: { products: any[] }) {
             const coverImage = product.product_images?.find((i: any) => i.sort_order === 0) ?? product.product_images?.[0] ?? null
             return (
               <Link key={product.id} href={`/product/${product.slug}`}
-                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
                 <div className="relative w-full flex-shrink-0" style={{ paddingTop: '56.25%' }}>
                   <div className="absolute inset-0" style={{ background: 'linear-gradient(145deg, #f0f9ff, #e0f2fe)' }}>
                     {coverImage ? (
@@ -412,33 +447,33 @@ function WhySection() {
     },
     {
       from: '#7C3AED', to: '#A855F7', highlight: '8:00–22:00',
-      title: 'Hỗ Trợ Zalo 24/7',
+      title: 'Hỗ Trợ Zalo',
       desc: 'Đội ngũ CSKH hỗ trợ tận tình qua Zalo. Phản hồi nhanh trong vòng vài phút.',
       icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.51 12 19.79 19.79 0 01.48 3.42 2 2 0 012.46 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.91 8.64a16 16 0 006.29 6.29l.91-.91a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" fill="rgba(255,255,255,0.9)"/></svg>
     },
   ]
   return (
-    <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 100%)' }}>
+    <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, #0A0F1E 0%, #0f1f3d 100%)' }}>
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-3">Tại Sao Chọn App Xanh</p>
+          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#60A5FA' }}>Tại Sao Chọn Xanh Soft</p>
           <h2 className="text-3xl md:text-4xl font-black text-white mb-3">Mua app xịn, giá không xịn</h2>
-          <p className="text-blue-100 max-w-xl mx-auto">Hàng nghìn khách hàng đã tiết kiệm hàng triệu đồng mỗi năm</p>
+          <p className="max-w-xl mx-auto" style={{ color: '#64748B' }}>Hàng nghìn khách hàng đã tiết kiệm hàng triệu đồng mỗi năm</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map(item => (
             <div key={item.title} className="rounded-2xl p-6 group hover:scale-[1.02] transition-all duration-200"
-              style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}>
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-sm"
                 style={{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }}>
                 {item.icon}
               </div>
               <div className="text-xs font-bold px-2.5 py-1 rounded-full mb-3 inline-block"
-                style={{ background: 'rgba(255,255,255,0.15)', color: 'white' }}>
+                style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)' }}>
                 {item.highlight}
               </div>
-              <h3 className="text-white font-bold text-lg mb-2">{item.title}</h3>
-              <p className="text-blue-100 text-sm leading-relaxed">{item.desc}</p>
+              <h3 className="font-bold text-lg mb-2 text-white">{item.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: '#64748B' }}>{item.desc}</p>
             </div>
           ))}
         </div>
@@ -547,35 +582,36 @@ function ReviewsSectionWrapper() {
 // ── CTA ───────────────────────────────────────────────────
 function CtaSection() {
   return (
-    <section className="py-20 bg-white px-4">
+    <section className="py-20 px-4" style={{ background: '#0A0F1E' }}>
       <div className="max-w-4xl mx-auto">
         <div className="rounded-3xl p-10 md:p-14 text-center relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #1e40af 0%, #0891b2 50%, #059669 100%)' }}>
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, white, transparent)' }} />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, white, transparent)' }} />
+          style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2942 50%, #0a1628 100%)', border: '1px solid rgba(37,99,235,0.3)' }}>
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, #3B82F6, transparent)' }} />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-15 pointer-events-none"
+            style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
           <div className="relative">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold mb-5"
-              style={{ background: 'rgba(255,255,255,0.15)', color: 'white' }}>
+              style={{ background: 'rgba(37,99,235,0.2)', color: '#93C5FD', border: '1px solid rgba(37,99,235,0.3)' }}>
               ⚡ Giao hàng tự động 24/7
             </div>
             <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Sẵn sàng tiết kiệm đến 90%?</h2>
-            <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
+            <p className="text-lg mb-8 max-w-xl mx-auto" style={{ color: '#64748B' }}>
               Hàng trăm sản phẩm premium đang chờ bạn với mức giá không thể tin được.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/shop"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base bg-white hover:bg-blue-50 transition-all"
-                style={{ color: '#1D4ED8' }}>
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base text-white transition-all hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 32px rgba(37,99,235,0.3)' }}>
                 Xem Sản Phẩm Ngay →
               </Link>
               <a href="https://zalo.me/0888993991"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base border-2 border-white text-white hover:bg-white/10 transition-all">
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:bg-white/5"
+                style={{ border: '1px solid rgba(255,255,255,0.15)', color: '#E2E8F0' }}>
                 💬 Chat Zalo Ngay
               </a>
             </div>
-            <div className="mt-8 flex flex-wrap justify-center gap-6 text-blue-100 text-sm">
+            <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm" style={{ color: '#475569' }}>
               {['✅ Miễn phí đăng ký', '⚡ Giao hàng tức thì', '🛡️ Bảo hành 100%', '💬 Hỗ trợ Zalo'].map(item => (
                 <span key={item}>{item}</span>
               ))}
