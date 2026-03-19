@@ -1,8 +1,8 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { Plus, Trash2, ArrowLeft, Save, Upload, X, ImagePlus, Star } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Upload, X, ImagePlus, Star, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { slugify } from '@/lib/utils'
 import type { Category } from '@/types'
@@ -34,6 +34,16 @@ interface Review {
   rating: number
   content: string
   created_at: string
+}
+
+interface ReadyAccount {
+  id?: string
+  email: string
+  password: string
+  extra_info: string
+  status: 'available' | 'assigned'
+  order_id?: string | null
+  orders?: { order_code: string; customer_name: string } | null
 }
 
 interface Props {
@@ -101,12 +111,77 @@ export function ProductForm({ categories, product }: Props) {
 
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsLoaded, setReviewsLoaded] = useState(false)
-  const [newReview, setNewReview] = useState({
-    reviewer_name: '', rating: 5, content: '', reviewer_avatar: ''
-  })
+  const [newReview, setNewReview] = useState({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '' })
   const [savingReview, setSavingReview] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'content' | 'variants' | 'reviews'>('basic')
+  const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'content' | 'variants' | 'accounts' | 'reviews'>('basic')
+
+  // Ready accounts state
+  const [accounts, setAccounts] = useState<ReadyAccount[]>([])
+  const [accLoading, setAccLoading] = useState(false)
+  const [accSaving, setAccSaving] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [showAccPass, setShowAccPass] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    if (!product?.id) return
+    if (activeTab === 'accounts') loadAccounts()
+  }, [activeTab, product?.id])
+
+  const loadAccounts = async () => {
+    if (!product?.id) return
+    setAccLoading(true)
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('product_ready_accounts')
+      .select('*, orders(order_code, customer_name)')
+      .eq('product_id', product.id)
+      .order('created_at', { ascending: true })
+    setAccounts((data ?? []) as ReadyAccount[])
+    setAccLoading(false)
+  }
+
+  const handleSaveAccounts = async () => {
+    if (!bulkText.trim() || !product?.id) return
+    setAccSaving(true)
+    const supabase = createClient()
+
+    const lines = bulkText.trim().split('\n').filter(l => l.trim())
+    const records = lines.map(line => {
+      const parts = line.split('|')
+      return {
+        product_id: product.id,
+        email: parts[0]?.trim() ?? '',
+        password: parts[1]?.trim() ?? '',
+        extra_info: parts[2]?.trim() ?? '',
+        status: 'available' as const,
+      }
+    }).filter(r => r.email && r.password)
+
+    if (records.length === 0) {
+      toast.error('Không có dòng hợp lệ. Format: email|password|thông tin thêm')
+      setAccSaving(false)
+      return
+    }
+
+    const { error } = await supabase.from('product_ready_accounts').insert(records)
+    if (error) {
+      toast.error('Lỗi lưu tài khoản', { description: error.message })
+    } else {
+      toast.success(`✅ Đã thêm ${records.length} tài khoản!`)
+      setBulkText('')
+      loadAccounts()
+    }
+    setAccSaving(false)
+  }
+
+  const handleDeleteAccount = async (id: string) => {
+    if (!confirm('Xóa tài khoản này?')) return
+    const supabase = createClient()
+    await supabase.from('product_ready_accounts').delete().eq('id', id)
+    setAccounts(prev => prev.filter(a => a.id !== id))
+    toast.success('Đã xóa')
+  }
 
   const handleNameChange = (name: string) => {
     setForm(f => ({ ...f, name, slug: isEdit ? f.slug : slugify(name) }))
@@ -160,7 +235,6 @@ export function ProductForm({ categories, product }: Props) {
     }
   }
 
-  // Reviews
   const loadReviews = async () => {
     if (!product?.id || reviewsLoaded) return
     const supabase = createClient()
@@ -171,10 +245,7 @@ export function ProductForm({ categories, product }: Props) {
   }
 
   const handleAddReview = async () => {
-    if (!newReview.reviewer_name || !newReview.content) {
-      toast.error('Vui lòng điền tên và nội dung')
-      return
-    }
+    if (!newReview.reviewer_name || !newReview.content) { toast.error('Vui lòng điền tên và nội dung'); return }
     setSavingReview(true)
     const supabase = createClient()
     const { data } = await supabase.from('product_reviews').insert({
@@ -183,6 +254,7 @@ export function ProductForm({ categories, product }: Props) {
       rating: newReview.rating,
       content: newReview.content,
       reviewer_avatar: newReview.reviewer_avatar || null,
+      status: 'approved',
     }).select().single()
     if (data) {
       setReviews(prev => [data, ...prev])
@@ -305,11 +377,16 @@ export function ProductForm({ categories, product }: Props) {
     window.location.href = '/admin/products'
   }
 
+  const isReadyAccount = form.delivery_type === 'ready_account' || form.delivery_type === 'both'
+  const availableCount = accounts.filter(a => a.status === 'available').length
+  const assignedCount = accounts.filter(a => a.status === 'assigned').length
+
   const TABS = [
     { id: 'basic', label: '📋 Thông Tin' },
     { id: 'images', label: `🖼️ Hình Ảnh (${(coverImage ? 1 : 0) + extraImages.length})` },
     { id: 'content', label: '📝 Nội Dung' },
     { id: 'variants', label: `🔧 Biến Thể (${variants.length})` },
+    { id: 'accounts', label: `🔐 Tài Khoản Cấp Sẵn${accounts.length > 0 ? ` (${availableCount} còn)` : ''}` },
     { id: 'reviews', label: `⭐ Đánh Giá (${reviews.length})` },
   ]
 
@@ -384,7 +461,6 @@ export function ProductForm({ categories, product }: Props) {
                   placeholder="Mô tả ngắn hiển thị trên card sản phẩm..." />
               </div>
             </div>
-
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
               <h2 className="font-bold text-slate-900">Giá & Tồn Kho</h2>
               <div className="grid grid-cols-2 gap-4">
@@ -424,10 +500,15 @@ export function ProductForm({ categories, product }: Props) {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Loại giao hàng</label>
                 <select value={form.delivery_type} onChange={e => setForm(f => ({ ...f, delivery_type: e.target.value }))} className="input">
-                  <option value="ready_account">📦 Cấp sẵn</option>
+                  <option value="ready_account">📦 Cấp sẵn (tự động giao)</option>
                   <option value="upgrade_owner">📧 Nâng cấp chính chủ</option>
                   <option value="both">🔀 Cả 2 lựa chọn</option>
                 </select>
+                {isReadyAccount && (
+                  <p className="text-xs mt-1.5 font-semibold" style={{ color: '#16A34A' }}>
+                    🔐 Nhớ thêm tài khoản ở tab "Tài Khoản Cấp Sẵn"
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Danh mục</label>
@@ -465,7 +546,6 @@ export function ProductForm({ categories, product }: Props) {
             <div className="flex items-center gap-2 mb-4">
               <Star size={18} style={{ color: '#D97706' }} />
               <h2 className="font-bold text-slate-900">Ảnh Bìa Sản Phẩm</h2>
-              <span className="text-xs text-slate-400">(Hiển thị chính, quan trọng nhất)</span>
             </div>
             {coverImage ? (
               <div className="relative w-48">
@@ -475,11 +555,9 @@ export function ProductForm({ categories, product }: Props) {
                   className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md">
                   <X size={14} />
                 </button>
-                <div className="mt-2">
-                  <input value={coverImage.alt_text}
-                    onChange={e => setCoverImage(prev => prev ? { ...prev, alt_text: e.target.value } : null)}
-                    placeholder="Alt text (SEO)" className="input text-xs" />
-                </div>
+                <input value={coverImage.alt_text}
+                  onChange={e => setCoverImage(prev => prev ? { ...prev, alt_text: e.target.value } : null)}
+                  placeholder="Alt text (SEO)" className="input text-xs mt-2" />
               </div>
             ) : (
               <div onClick={() => coverInputRef.current?.click()}
@@ -491,20 +569,13 @@ export function ProductForm({ categories, product }: Props) {
               </div>
             )}
             <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverSelect} />
-            {!coverImage && (
-              <button onClick={() => coverInputRef.current?.click()}
-                className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
-                style={{ borderColor: '#2563EB', color: '#2563EB' }}>
-                <Upload size={16} /> Tải ảnh bìa lên
-              </button>
-            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="font-bold text-slate-900">Ảnh Phụ Sản Phẩm</h2>
-                <p className="text-sm text-slate-400 mt-0.5">Thêm nhiều ảnh để tăng SEO và trải nghiệm khách hàng</p>
+                <p className="text-sm text-slate-400 mt-0.5">Thêm nhiều ảnh để tăng SEO</p>
               </div>
               <button onClick={() => extraInputRef.current?.click()}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all"
@@ -519,10 +590,9 @@ export function ProductForm({ categories, product }: Props) {
                 style={{ borderColor: '#CBD5E1' }}>
                 <ImagePlus size={24} className="mb-1.5 text-slate-300" />
                 <p className="text-sm text-slate-400">Click để thêm ảnh phụ</p>
-                <p className="text-xs text-slate-300">Chọn nhiều ảnh cùng lúc</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {extraImages.map((img, index) => (
                   <div key={index} className="relative group">
                     <img src={img.preview || img.image_url} alt={img.alt_text}
@@ -541,23 +611,12 @@ export function ProductForm({ categories, product }: Props) {
                   </div>
                 ))}
                 <div onClick={() => extraInputRef.current?.click()}
-                  className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
+                  className="aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 transition-all"
                   style={{ borderColor: '#CBD5E1' }}>
                   <Plus size={20} className="text-slate-300" />
-                  <p className="text-xs text-slate-300 mt-1">Thêm</p>
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="rounded-2xl p-4 border" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
-            <p className="text-sm font-bold mb-1" style={{ color: '#1E40AF' }}>💡 Mẹo SEO cho hình ảnh</p>
-            <ul className="text-xs space-y-1" style={{ color: '#3B82F6' }}>
-              <li>• Điền alt text mô tả rõ nội dung ảnh để Google index tốt hơn</li>
-              <li>• Dùng ảnh có kích thước 16:9, tối thiểu 1280x720px</li>
-              <li>• Tên file ảnh nên có từ khóa (VD: chatgpt-plus-business.jpg)</li>
-              <li>• Thêm 3-5 ảnh phụ giúp tăng thời gian ở lại trang</li>
-            </ul>
           </div>
         </div>
       )}
@@ -567,9 +626,9 @@ export function ProductForm({ categories, product }: Props) {
         <div className="space-y-5">
           {[
             { key: 'description_html', label: '📋 Mô Tả Chi Tiết (HTML)', placeholder: '<h2>Tiêu đề</h2><p>Nội dung...</p>', rows: 12 },
-            { key: 'usage_guide_html', label: '📖 Hướng Dẫn Sử Dụng (HTML)', placeholder: '<ol><li>Bước 1...</li></ol>', rows: 10 },
+            { key: 'usage_guide_html', label: '📖 Hướng Dẫn Sử Dụng (HTML) — Dùng chung cho tất cả khách', placeholder: '<ol><li>Bước 1...</li></ol>', rows: 10 },
             { key: 'warranty_html', label: '🛡️ Chính Sách Bảo Hành (HTML)', placeholder: '<ul><li>Bảo hành đăng nhập lần đầu</li></ul>', rows: 8 },
-            { key: 'faq_html', label: '❓ FAQ (HTML)', placeholder: '<p><strong>Q: Câu hỏi?</strong><br/>A: Trả lời</p>', rows: 8 },
+            { key: 'faq_html', label: '❓ FAQ (HTML)', placeholder: '<p><strong>Q: Câu hỏi?</strong></p>', rows: 8 },
           ].map(({ key, label, placeholder, rows }) => (
             <div key={key} className="bg-white rounded-2xl border border-slate-200 p-6">
               <label className="block text-sm font-bold text-slate-700 mb-3">{label}</label>
@@ -579,9 +638,7 @@ export function ProductForm({ categories, product }: Props) {
                 placeholder={placeholder} />
               {(form as any)[key] && (
                 <details className="mt-3">
-                  <summary className="text-xs font-semibold cursor-pointer" style={{ color: '#2563EB' }}>
-                    👁️ Preview
-                  </summary>
+                  <summary className="text-xs font-semibold cursor-pointer" style={{ color: '#2563EB' }}>👁️ Preview</summary>
                   <div className="mt-2 p-4 rounded-xl border border-slate-200 product-content text-sm"
                     style={{ background: '#F8FAFC' }}
                     dangerouslySetInnerHTML={{ __html: (form as any)[key] }} />
@@ -609,8 +666,7 @@ export function ProductForm({ categories, product }: Props) {
             </div>
             {variants.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl">
-                <p className="text-slate-400 text-sm mb-1">Chưa có biến thể</p>
-                <p className="text-xs text-slate-300 mb-4">Không cần biến thể nếu sản phẩm chỉ có 1 lựa chọn</p>
+                <p className="text-slate-400 text-sm mb-4">Chưa có biến thể</p>
                 <button onClick={addVariant}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
                   style={{ background: '#2563EB' }}>
@@ -635,7 +691,7 @@ export function ProductForm({ categories, product }: Props) {
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Giá trị hiển thị</label>
                         <input value={variant.option_value} onChange={e => updateVariant(index, 'option_value', e.target.value)}
-                          placeholder="VD: 1 năm, 3 tháng..." className="input text-sm" />
+                          placeholder="VD: 1 năm" className="input text-sm" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Tồn kho</label>
@@ -681,7 +737,167 @@ export function ProductForm({ categories, product }: Props) {
         </div>
       )}
 
-      {/* ── Tab 5: Reviews ── */}
+      {/* ── Tab 5: Ready Accounts ── */}
+      {activeTab === 'accounts' && (
+        <div className="space-y-6">
+          {!isReadyAccount ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+              <div className="text-4xl mb-3">🔐</div>
+              <p className="font-semibold text-slate-700 mb-1">Chỉ áp dụng cho loại "Cấp sẵn"</p>
+              <p className="text-sm text-slate-400">Vào tab Thông Tin → đổi Loại Giao Hàng thành "Cấp sẵn" hoặc "Cả hai"</p>
+            </div>
+          ) : !product?.id ? (
+            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+              <div className="text-4xl mb-3">💾</div>
+              <p className="font-semibold text-slate-700">Lưu sản phẩm trước khi thêm tài khoản</p>
+            </div>
+          ) : (
+            <>
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 text-center">
+                  <p className="text-3xl font-black text-slate-900">{accounts.length}</p>
+                  <p className="text-xs font-semibold text-slate-500 mt-1">Tổng tài khoản</p>
+                </div>
+                <div className="rounded-2xl p-5 text-center" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                  <p className="text-3xl font-black" style={{ color: '#16A34A' }}>{availableCount}</p>
+                  <p className="text-xs font-semibold mt-1" style={{ color: '#16A34A' }}>✅ Còn trống</p>
+                </div>
+                <div className="rounded-2xl p-5 text-center" style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                  <p className="text-3xl font-black" style={{ color: '#D97706' }}>{assignedCount}</p>
+                  <p className="text-xs font-semibold mt-1" style={{ color: '#D97706' }}>📦 Đã giao</p>
+                </div>
+              </div>
+
+              {/* Bulk input */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <h2 className="font-bold text-slate-900 mb-1">Thêm Tài Khoản Hàng Loạt</h2>
+                <p className="text-xs text-slate-400 mb-4">
+                  Mỗi dòng 1 tài khoản · Format:{' '}
+                  <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono">email|mật_khẩu|thông_tin_thêm</code>
+                </p>
+                <textarea
+                  value={bulkText}
+                  onChange={e => setBulkText(e.target.value)}
+                  rows={7}
+                  className="input font-mono text-sm resize-none"
+                  placeholder={`brake1@gmail.com|matkhau123|acc clean, chưa đổi pass\nbrake2@gmail.com|matkhau456|team US\nbrake3@gmail.com|matkhau789|có lịch sử chat`}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-slate-400">
+                    {bulkText.trim()
+                      ? `${bulkText.trim().split('\n').filter(l => l.trim() && l.includes('|')).length} dòng hợp lệ`
+                      : 'Chưa có dữ liệu'}
+                  </p>
+                  <button onClick={handleSaveAccounts} disabled={accSaving || !bulkText.trim()}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
+                    style={{ background: 'linear-gradient(135deg, #16A34A, #059669)' }}>
+                    {accSaving ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Đang lưu...
+                      </span>
+                    ) : '💾 Lưu Danh Sách'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Account list */}
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                  <h2 className="font-bold text-slate-900">Danh Sách Tài Khoản ({accounts.length})</h2>
+                  <button onClick={loadAccounts}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                    style={{ color: '#2563EB' }}>
+                    🔄 Refresh
+                  </button>
+                </div>
+
+                {accLoading ? (
+                  <div className="flex justify-center py-10">
+                    <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : accounts.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400">
+                    <p>Chưa có tài khoản nào. Thêm ở trên!</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+                    {accounts.map((acc, i) => (
+                      <div key={acc.id ?? i}
+                        className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors"
+                        style={{ background: acc.status === 'assigned' ? '#FFFBEB' : 'white' }}>
+
+                        {/* Status */}
+                        <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${
+                          acc.status === 'available'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {acc.status === 'available' ? '✅ Trống' : '📦 Đã giao'}
+                        </span>
+
+                        {/* Credentials */}
+                        <div className="flex-1 grid grid-cols-3 gap-3 min-w-0">
+                          <div className="min-w-0">
+                            <p className="text-xs text-slate-400 mb-0.5">Email</p>
+                            <p className="text-sm font-mono font-semibold text-slate-800 truncate">{acc.email}</p>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs text-slate-400 mb-0.5">Mật khẩu</p>
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-mono font-semibold text-slate-800 truncate">
+                                {showAccPass[i] ? acc.password : '••••••••'}
+                              </p>
+                              <button onClick={() => setShowAccPass(p => ({ ...p, [i]: !p[i] }))}
+                                className="flex-shrink-0 text-slate-400 hover:text-slate-600">
+                                {showAccPass[i] ? <EyeOff size={12} /> : <Eye size={12} />}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs text-slate-400 mb-0.5">Thông tin thêm</p>
+                            <p className="text-sm text-slate-600 truncate">{acc.extra_info || '—'}</p>
+                          </div>
+                        </div>
+
+                        {/* Order info if assigned */}
+                        {acc.status === 'assigned' && acc.orders && (
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-xs text-slate-400">Đơn</p>
+                            <p className="text-xs font-bold text-amber-700">#{acc.orders.order_code}</p>
+                          </div>
+                        )}
+
+                        {/* Delete — only available */}
+                        {acc.status === 'available' && acc.id && (
+                          <button onClick={() => handleDeleteAccount(acc.id!)}
+                            className="flex-shrink-0 p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Info box */}
+              <div className="rounded-2xl p-4 border" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
+                <p className="text-sm font-bold mb-2" style={{ color: '#1E40AF' }}>💡 Cách hoạt động</p>
+                <ul className="text-xs space-y-1" style={{ color: '#3B82F6' }}>
+                  <li>• Khi admin đánh dấu đơn <strong>Hoàn thành</strong> → hệ thống tự lấy 1 tài khoản còn trống theo thứ tự thêm vào</li>
+                  <li>• Tài khoản được gán sẽ hiển thị ngay trong đơn hàng của khách tại /account/orders</li>
+                  <li>• Phần <strong>Hướng Dẫn Sử Dụng</strong> (tab Nội Dung) dùng chung cho tất cả khách mua sản phẩm này</li>
+                  <li>• Tài khoản đã giao không thể xóa để đảm bảo lịch sử</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Tab 6: Reviews ── */}
       {activeTab === 'reviews' && (
         <div className="space-y-5">
           {!product?.id ? (
@@ -691,50 +907,33 @@ export function ProductForm({ categories, product }: Props) {
             </div>
           ) : (
             <>
-              {/* Add review */}
               <div className="bg-white rounded-2xl border border-slate-200 p-6">
                 <h2 className="font-bold text-slate-900 mb-4">➕ Thêm Đánh Giá</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Tên người đánh giá
-                      </label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tên người đánh giá</label>
                       <input value={newReview.reviewer_name}
                         onChange={e => setNewReview(r => ({ ...r, reviewer_name: e.target.value }))}
                         placeholder="Nguyễn Văn A" className="input text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                        Số sao
-                      </label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Số sao</label>
                       <select value={newReview.rating}
                         onChange={e => setNewReview(r => ({ ...r, rating: parseInt(e.target.value) }))}
                         className="input text-sm">
-                        <option value={5}>⭐⭐⭐⭐⭐ 5 sao</option>
-                        <option value={4}>⭐⭐⭐⭐ 4 sao</option>
-                        <option value={3}>⭐⭐⭐ 3 sao</option>
-                        <option value={2}>⭐⭐ 2 sao</option>
-                        <option value={1}>⭐ 1 sao</option>
+                        {[5,4,3,2,1].map(s => (
+                          <option key={s} value={s}>{'⭐'.repeat(s)} {s} sao</option>
+                        ))}
                       </select>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                      Nội dung đánh giá
-                    </label>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nội dung</label>
                     <textarea value={newReview.content}
                       onChange={e => setNewReview(r => ({ ...r, content: e.target.value }))}
                       rows={3} className="input resize-none text-sm"
                       placeholder="Sản phẩm rất tốt, giao hàng nhanh..." />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                      URL Avatar (tùy chọn)
-                    </label>
-                    <input value={newReview.reviewer_avatar}
-                      onChange={e => setNewReview(r => ({ ...r, reviewer_avatar: e.target.value }))}
-                      placeholder="https://..." className="input text-sm" />
                   </div>
                   <button onClick={handleAddReview} disabled={savingReview}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
@@ -746,7 +945,6 @@ export function ProductForm({ categories, product }: Props) {
                 </div>
               </div>
 
-              {/* Review list */}
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100">
                   <h2 className="font-bold text-slate-900">Danh sách đánh giá ({reviews.length})</h2>
@@ -759,9 +957,7 @@ export function ProductForm({ categories, product }: Props) {
                       <div key={review.id} className="p-4 flex items-start gap-3 hover:bg-slate-50">
                         <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
                           style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
-                          {review.reviewer_avatar
-                            ? <img src={review.reviewer_avatar} alt="" className="w-full h-full object-cover rounded-full" />
-                            : review.reviewer_name.charAt(0).toUpperCase()}
+                          {review.reviewer_name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -769,9 +965,7 @@ export function ProductForm({ categories, product }: Props) {
                             <span className="text-xs">{'⭐'.repeat(review.rating)}</span>
                           </div>
                           <p className="text-sm text-slate-600">{review.content}</p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {new Date(review.created_at).toLocaleDateString('vi-VN')}
-                          </p>
+                          <p className="text-xs text-slate-400 mt-1">{new Date(review.created_at).toLocaleDateString('vi-VN')}</p>
                         </div>
                         <button onClick={() => handleDeleteReview(review.id)}
                           className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
