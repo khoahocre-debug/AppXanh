@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.RESEND_FROM ?? 'onboarding@resend.dev'
-const SITE = 'https://appxanh.com'
+const SITE = 'https://xanhsoft.com'
 
 // ── Welcome email ──────────────────────────────────────────
 export async function sendWelcomeEmail({
@@ -61,7 +61,7 @@ export async function sendWelcomeEmail({
     <!-- Footer -->
     <div style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;">
       <p style="margin:0;color:#94a3b8;font-size:12px;">
-        © 2025 App Xanh · <a href="${SITE}" style="color:#2563eb;">appxanh.com</a>
+        © 2025 App Xanh · <a href="${SITE}" style="color:#2563eb;">xanhsoft.com</a>
       </p>
     </div>
   </div>
@@ -167,7 +167,7 @@ export async function sendOrderConfirmationEmail({
     <!-- Footer -->
     <div style="background:#f8fafc;padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;">
       <p style="margin:0;color:#94a3b8;font-size:12px;">
-        © 2025 App Xanh · <a href="${SITE}" style="color:#2563eb;">appxanh.com</a>
+        © 2025 App Xanh · <a href="${SITE}" style="color:#2563eb;">xanhsoft.com</a>
       </p>
     </div>
   </div>

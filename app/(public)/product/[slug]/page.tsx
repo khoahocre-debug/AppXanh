@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: product.name,
       description: product.short_description ?? '',
-      url: `https://appxanh.com/product/${product.slug}`,
+      url: `https://xanhsoft.com/product/${product.slug}`,
       siteName: 'App Xanh',
       locale: 'vi_VN',
       type: 'website',

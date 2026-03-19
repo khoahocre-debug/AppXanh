@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'App Xanh — Tài Khoản Số Giá Rẻ',
     description: 'Mua tài khoản premium giá rẻ hơn 90%. Giao tự động 24/7.',
-    url: 'https://appxanh.com',
+    url: 'https://xanhsoft.com',
     siteName: 'App Xanh',
     locale: 'vi_VN',
     type: 'website',

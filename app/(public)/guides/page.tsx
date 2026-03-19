@@ -89,7 +89,7 @@ const GUIDES = [
     color: '#16A34A', bg: '#F0FDF4',
     title: 'Nhận Thông Tin Tài Khoản',
     steps: [
-      { n: '01', title: 'Vào mục Đơn Hàng', desc: 'Đăng nhập vào App Xanh → click vào tên ở góc trên phải → chọn "Đơn Hàng Của Tôi" hoặc truy cập thẳng appxanh.com/account/orders.' },
+      { n: '01', title: 'Vào mục Đơn Hàng', desc: 'Đăng nhập vào App Xanh → click vào tên ở góc trên phải → chọn "Đơn Hàng Của Tôi" hoặc truy cập thẳng xanhsoft.com/account/orders.' },
       { n: '02', title: 'Chọn đơn hàng', desc: 'Tìm đơn hàng vừa mua (trạng thái "Hoàn thành"). Click "Xem Chi Tiết" để mở trang chi tiết đơn hàng.' },
       { n: '03', title: 'Xem thông tin tài khoản', desc: 'Trong phần "Thông Tin Tài Khoản", bạn sẽ thấy email đăng nhập, mật khẩu và các thông tin bổ sung. Dùng nút Copy để sao chép.' },
       { n: '04', title: 'Đọc hướng dẫn sử dụng', desc: 'Bên dưới thông tin tài khoản là hướng dẫn đăng nhập chi tiết cho từng sản phẩm. Làm theo từng bước là xong!' },
