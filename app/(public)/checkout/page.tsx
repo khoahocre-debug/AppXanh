@@ -186,7 +186,26 @@ function CheckoutContent() {
             price: item.variant?.price ?? item.product.price,
           })),
         }),
-      }).catch(err => console.error('Email send failed:', err))
+       }).catch(err => console.error('Email send failed:', err))
+
+      // Gửi notify admin — new order
+      fetch('/api/send-admin-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'new_order',
+          orderCode: order.order_code,
+          customerName: form.customer_name,
+          customerEmail: form.customer_email,
+          total: totalAmount,
+          items: items.map(item => ({
+            name: item.product.name,
+            variant: item.variant?.option_value ?? null,
+            quantity: item.quantity,
+            price: item.variant?.price ?? item.product.price,
+          })),
+        }),
+      }).catch(err => console.error('Admin notify failed:', err))
 
       // Chuyển sang trạng thái redirecting TRƯỚC khi clear cart
       // để tránh flash giỏ hàng trống
