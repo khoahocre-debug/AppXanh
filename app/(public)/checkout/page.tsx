@@ -1,4 +1,5 @@
 'use client'
+import { Suspense } from 'react'
 import { useState, useEffect } from 'react'
 import { useCartStore } from '@/lib/stores/cart'
 import { formatPrice } from '@/lib/utils'
@@ -7,7 +8,7 @@ import { toast } from 'sonner'
 import { Shield, ChevronRight, Eye, EyeOff, Lock } from 'lucide-react'
 import Link from 'next/link'
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const { items, total, clearCart } = useCartStore()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -332,5 +333,17 @@ fetch('/api/send-order', {
         </div>
       </form>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <CheckoutContent />
+    </Suspense>
   )
 }
