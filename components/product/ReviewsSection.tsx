@@ -23,6 +23,16 @@ interface Props {
   productName: string
 }
 
+// Helper tìm review kể cả trong reply con
+function findReviewById(reviews: Review[], reviewId: string): Review | undefined {
+  for (const review of reviews) {
+    if (review.id === reviewId) return review
+    const reply = review.replies?.find(child => child.id === reviewId)
+    if (reply) return reply
+  }
+  return undefined
+}
+
 function formatDateTime(dateStr: string) {
   return new Date(dateStr).toLocaleString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -51,27 +61,46 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   )
 }
 
-function ReviewCard({ review, currentUserId, likedIds, onLike, onReply, depth = 0 }: {
+function ReviewCard({ review, likedIds, onLike, onReply, depth = 0, mode = 'review' }: {
   review: Review
-  currentUserId: string | null
   likedIds: Set<string>
   onLike: (id: string) => void
   onReply: (id: string, name: string) => void
   depth?: number
+  mode?: 'review' | 'qa'
 }) {
   const isLiked = likedIds.has(review.id)
+  const isQuestion = mode === 'qa' && depth === 0
+  const isReply = depth > 0
+
   return (
     <div className={depth > 0 ? 'ml-8 border-l-2 pl-4' : ''}
       style={{ borderColor: depth > 0 ? '#E2E8F0' : 'transparent' }}>
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
         <div className="flex items-start gap-3 mb-3">
           <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-            style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
+            style={{
+              background: isQuestion
+                ? 'linear-gradient(135deg, #7C3AED, #A855F7)'
+                : 'linear-gradient(135deg, #2563EB, #0891B2)',
+            }}>
             {review.reviewer_name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
               <p className="font-bold text-slate-900 text-sm">{review.reviewer_name}</p>
+              {isQuestion && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: '#F5F3FF', color: '#7C3AED' }}>
+                  ❓ Câu hỏi
+                </span>
+              )}
+              {mode === 'qa' && isReply && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                  ↩️ Trả lời
+                </span>
+              )}
               {review.is_verified_purchase && (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
                   style={{ background: '#DCFCE7', color: '#166534' }}>
@@ -96,7 +125,9 @@ function ReviewCard({ review, currentUserId, likedIds, onLike, onReply, depth = 
             </div>
           </div>
         </div>
+
         <p className="text-slate-700 text-sm leading-relaxed mb-3">{review.content}</p>
+
         <div className="flex items-center gap-3">
           <button onClick={() => onLike(review.id)}
             className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
@@ -118,11 +149,13 @@ function ReviewCard({ review, currentUserId, likedIds, onLike, onReply, depth = 
           )}
         </div>
       </div>
+
       {review.replies && review.replies.length > 0 && (
         <div className="mt-3 space-y-3">
           {review.replies.map(reply => (
-            <ReviewCard key={reply.id} review={reply} currentUserId={currentUserId}
-              likedIds={likedIds} onLike={onLike} onReply={onReply} depth={depth + 1} />
+            <ReviewCard key={reply.id} review={reply}
+              likedIds={likedIds} onLike={onLike} onReply={onReply}
+              depth={depth + 1} mode={mode} />
           ))}
         </div>
       )}
@@ -136,89 +169,148 @@ export function ReviewsSection({ productId, productName }: Props) {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [hasPurchased, setHasPurchased] = useState(false)
-  const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null)
+
+  // Tách riêng 2 reply state — review form và Q&A form độc lập nhau
+  const [reviewReplyTo, setReviewReplyTo] = useState<{ id: string; name: string } | null>(null)
+  const [qaReplyTo, setQaReplyTo] = useState<{ id: string; name: string } | null>(null)
+
   const [form, setForm] = useState({ name: '', rating: 0, content: '', submitting: false })
   const [qaForm, setQaForm] = useState({ name: '', content: '', submitting: false })
 
   useEffect(() => { loadData() }, [productId])
 
   const loadData = async () => {
+    setLoading(true)
     const supabase = createClient()
-    const { data: reviewsData } = await supabase
-      .from('product_reviews').select('*')
-      .eq('product_id', productId).eq('status', 'approved')
-      .order('created_at', { ascending: false })
 
-    const map: Record<string, Review> = {}
-    const roots: Review[] = []
-    ;(reviewsData ?? []).forEach(r => { map[r.id] = { ...r, replies: [] } })
-    ;(reviewsData ?? []).forEach(r => {
-      if (r.parent_id && map[r.parent_id]) map[r.parent_id].replies!.push(map[r.id])
-      else if (!r.parent_id) roots.push(map[r.id])
-    })
-    setAllReviews(roots)
+    try {
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('product_reviews').select('*')
+        .eq('product_id', productId).eq('status', 'approved')
+        .order('created_at', { ascending: false })
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-      setCurrentUser(profile)
-      const name = profile?.full_name || session.user.email?.split('@')[0] || ''
-      setForm(f => ({ ...f, name }))
-      setQaForm(f => ({ ...f, name }))
+      if (reviewsError) throw reviewsError
 
-      const { data: orders } = await supabase
-        .from('orders').select('id, order_items!inner(product_id)')
-        .eq('user_id', session.user.id).eq('order_status', 'completed')
-      const purchased = (orders ?? []).some((o: any) =>
-        o.order_items?.some((i: any) => i.product_id === productId)
-      )
-      setHasPurchased(purchased)
+      // Build tree
+      const map: Record<string, Review> = {}
+      const roots: Review[] = []
+      ;(reviewsData ?? []).forEach(r => { map[r.id] = { ...r, replies: [] } })
+      ;(reviewsData ?? []).forEach(r => {
+        if (r.parent_id && map[r.parent_id]) map[r.parent_id].replies!.push(map[r.id])
+        else if (!r.parent_id) roots.push(map[r.id])
+      })
+      // Sort replies ascending (oldest first)
+      roots.forEach(root => {
+        root.replies = (root.replies ?? []).sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+      })
+      setAllReviews(roots)
 
-      const { data: likes } = await supabase.from('review_likes').select('review_id').eq('user_id', session.user.id)
-      setLikedIds(new Set((likes ?? []).map((l: any) => l.review_id)))
+      // Reset user state
+      setCurrentUser(null)
+      setHasPurchased(false)
+      setLikedIds(new Set())
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles').select('*').eq('id', session.user.id).single()
+        if (profileError) throw profileError
+
+        setCurrentUser(profile)
+        const name = profile?.full_name || session.user.email?.split('@')[0] || ''
+        setForm(f => ({ ...f, name }))
+        setQaForm(f => ({ ...f, name }))
+
+        const { data: orders, error: ordersError } = await supabase
+          .from('orders').select('id, order_items!inner(product_id)')
+          .eq('user_id', session.user.id).eq('order_status', 'completed')
+        if (ordersError) throw ordersError
+
+        const purchased = (orders ?? []).some((o: any) =>
+          o.order_items?.some((i: any) => i.product_id === productId)
+        )
+        setHasPurchased(purchased)
+
+        const { data: likes, error: likesError } = await supabase
+          .from('review_likes').select('review_id').eq('user_id', session.user.id)
+        if (likesError) throw likesError
+
+        setLikedIds(new Set((likes ?? []).map((l: any) => l.review_id)))
+      }
+    } catch (err: any) {
+      toast.error('Không thể tải đánh giá / hỏi đáp', { description: err.message })
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleLike = async (reviewId: string) => {
     if (!currentUser) { toast.error('Vui lòng đăng nhập để thích bình luận'); return }
     const supabase = createClient()
     const isLiked = likedIds.has(reviewId)
-    const target = allReviews.find(r => r.id === reviewId)
-    if (isLiked) {
-      await supabase.from('review_likes').delete().eq('review_id', reviewId).eq('user_id', currentUser.id)
-      await supabase.from('product_reviews').update({ likes_count: Math.max(0, (target?.likes_count ?? 1) - 1) }).eq('id', reviewId)
-      setLikedIds(prev => { const s = new Set(prev); s.delete(reviewId); return s })
-    } else {
-      await supabase.from('review_likes').insert({ review_id: reviewId, user_id: currentUser.id })
-      await supabase.from('product_reviews').update({ likes_count: (target?.likes_count ?? 0) + 1 }).eq('id', reviewId)
-      setLikedIds(prev => new Set([...prev, reviewId]))
+    // Dùng findReviewById để tìm cả reply con — fix bug cũ
+    const target = findReviewById(allReviews, reviewId)
+
+    try {
+      if (isLiked) {
+        const { error: unlikeErr } = await supabase.from('review_likes')
+          .delete().eq('review_id', reviewId).eq('user_id', currentUser.id)
+        if (unlikeErr) throw unlikeErr
+
+        const { error: countErr } = await supabase.from('product_reviews')
+          .update({ likes_count: Math.max(0, (target?.likes_count ?? 1) - 1) }).eq('id', reviewId)
+        if (countErr) throw countErr
+
+        setLikedIds(prev => { const s = new Set(prev); s.delete(reviewId); return s })
+      } else {
+        const { error: likeErr } = await supabase.from('review_likes')
+          .insert({ review_id: reviewId, user_id: currentUser.id })
+        if (likeErr) throw likeErr
+
+        const { error: countErr } = await supabase.from('product_reviews')
+          .update({ likes_count: (target?.likes_count ?? 0) + 1 }).eq('id', reviewId)
+        if (countErr) throw countErr
+
+        setLikedIds(prev => new Set([...prev, reviewId]))
+      }
+      loadData()
+    } catch (err: any) {
+      toast.error('Không thể cập nhật lượt hữu ích', { description: err.message })
     }
-    loadData()
   }
 
-  const handleReply = (id: string, name: string) => {
+  // Review reply → scroll đến review-form
+  const handleReplyReview = (id: string, name: string) => {
     if (!currentUser) { toast.error('Vui lòng đăng nhập để trả lời'); return }
-    setReplyTo({ id, name })
+    setReviewReplyTo({ id, name })
     setTimeout(() => document.getElementById('review-form')?.scrollIntoView({ behavior: 'smooth' }), 100)
+  }
+
+  // Q&A reply → scroll đến qa-form riêng, không lẫn vào review form
+  const handleReplyQa = (id: string, name: string) => {
+    setQaReplyTo({ id, name })
+    setTimeout(() => document.getElementById('qa-form')?.scrollIntoView({ behavior: 'smooth' }), 100)
   }
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('Vui lòng điền tên'); return }
     if (form.content.length < 10) { toast.error('Bình luận tối thiểu 10 ký tự'); return }
-    if (!replyTo && form.rating === 0) { toast.error('Vui lòng chọn số sao'); return }
+    if (!reviewReplyTo && form.rating === 0) { toast.error('Vui lòng chọn số sao'); return }
+
     setForm(f => ({ ...f, submitting: true }))
     const supabase = createClient()
     const { error } = await supabase.from('product_reviews').insert({
       product_id: productId,
       user_id: currentUser?.id ?? null,
       reviewer_name: form.name,
-      rating: !replyTo && form.rating > 0 ? form.rating : null,
+      rating: !reviewReplyTo && form.rating > 0 ? form.rating : null,
       content: form.content,
       status: 'pending',
-      is_verified_purchase: hasPurchased && !replyTo,
-      parent_id: replyTo?.id ?? null,
+      is_verified_purchase: hasPurchased && !reviewReplyTo,
+      parent_id: reviewReplyTo?.id ?? null,
       likes_count: 0,
     })
     if (error) {
@@ -226,7 +318,7 @@ export function ReviewsSection({ productId, productName }: Props) {
     } else {
       toast.success('Đã gửi! Đang chờ duyệt.')
       setForm(f => ({ ...f, rating: 0, content: '' }))
-      setReplyTo(null)
+      setReviewReplyTo(null)
     }
     setForm(f => ({ ...f, submitting: false }))
   }
@@ -234,7 +326,8 @@ export function ReviewsSection({ productId, productName }: Props) {
   const handleSubmitQa = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!qaForm.name.trim()) { toast.error('Vui lòng điền tên'); return }
-    if (qaForm.content.length < 10) { toast.error('Câu hỏi tối thiểu 10 ký tự'); return }
+    if (qaForm.content.length < 10) { toast.error('Nội dung tối thiểu 10 ký tự'); return }
+
     setQaForm(f => ({ ...f, submitting: true }))
     const supabase = createClient()
     const { error } = await supabase.from('product_reviews').insert({
@@ -245,14 +338,15 @@ export function ReviewsSection({ productId, productName }: Props) {
       content: qaForm.content,
       status: 'pending',
       is_verified_purchase: false,
-      parent_id: null,
+      parent_id: qaReplyTo?.id ?? null,
       likes_count: 0,
     })
     if (error) {
       toast.error('Lỗi khi gửi', { description: error.message })
     } else {
-      toast.success('Câu hỏi đã được gửi! Chúng tôi sẽ trả lời sớm nhất.')
+      toast.success(qaReplyTo ? 'Đã gửi trả lời! Đang chờ duyệt.' : 'Câu hỏi đã được gửi! Chúng tôi sẽ trả lời sớm nhất.')
       setQaForm(f => ({ ...f, content: '' }))
+      setQaReplyTo(null)
     }
     setQaForm(f => ({ ...f, submitting: false }))
   }
@@ -275,7 +369,7 @@ export function ReviewsSection({ productId, productName }: Props) {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-1 h-7 rounded-full" style={{ background: 'linear-gradient(135deg,#2563EB,#0891B2)' }} />
-          <h2 className="text-lg font-black text-slate-900">Đánh Giá Sản Phẩm</h2>
+          <h2 className="text-lg font-black text-slate-900">Đánh Giá {productName}</h2>
           {ratingReviews.length > 0 && (
             <span className="text-sm font-semibold px-2.5 py-1 rounded-full"
               style={{ background: '#EFF6FF', color: '#2563EB' }}>
@@ -331,8 +425,7 @@ export function ReviewsSection({ productId, productName }: Props) {
           <div className="space-y-4">
             {ratingReviews.map(review => (
               <ReviewCard key={review.id} review={review}
-                currentUserId={currentUser?.id ?? null}
-                likedIds={likedIds} onLike={handleLike} onReply={handleReply} />
+                likedIds={likedIds} onLike={handleLike} onReply={handleReplyReview} mode="review" />
             ))}
           </div>
         )}
@@ -341,15 +434,15 @@ export function ReviewsSection({ productId, productName }: Props) {
         {hasPurchased && (
           <div id="review-form" className="bg-white rounded-2xl border border-slate-200 p-6">
             <h3 className="font-bold text-slate-900 mb-2">
-              {replyTo ? '↩️ Trả lời @' + replyTo.name : '✍️ Viết đánh giá'}
+              {reviewReplyTo ? '↩️ Trả lời @' + reviewReplyTo.name : '✍️ Viết đánh giá'}
             </h3>
-            {replyTo && (
-              <button onClick={() => setReplyTo(null)}
+            {reviewReplyTo && (
+              <button onClick={() => setReviewReplyTo(null)}
                 className="text-xs text-slate-400 hover:text-slate-600 mb-3 block">
                 × Huỷ trả lời
               </button>
             )}
-            {!replyTo && (
+            {!reviewReplyTo && (
               <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full mb-4"
                 style={{ background: '#DCFCE7', color: '#166534' }}>
                 <CheckCircle2 size={12} /> Bạn đã mua sản phẩm này — có thể đánh giá sao
@@ -361,7 +454,7 @@ export function ReviewsSection({ productId, productName }: Props) {
                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Nguyễn Văn A" className="input" required />
               </div>
-              {!replyTo && (
+              {!reviewReplyTo && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Đánh giá *</label>
                   <StarPicker value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
@@ -374,12 +467,12 @@ export function ReviewsSection({ productId, productName }: Props) {
               )}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  {replyTo ? 'Nội dung trả lời *' : 'Nội dung đánh giá *'}
+                  {reviewReplyTo ? 'Nội dung trả lời *' : 'Nội dung đánh giá *'}
                 </label>
                 <textarea value={form.content}
                   onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
                   rows={4} className="input resize-none"
-                  placeholder={replyTo ? 'Trả lời ' + replyTo.name + '...' : 'Chia sẻ trải nghiệm của bạn...'}
+                  placeholder={reviewReplyTo ? 'Trả lời ' + reviewReplyTo.name + '...' : 'Chia sẻ trải nghiệm của bạn về ' + productName + '...'}
                   required minLength={10} />
                 <p className="text-xs text-slate-400 mt-1">{form.content.length}/500 ký tự</p>
               </div>
@@ -390,7 +483,7 @@ export function ReviewsSection({ productId, productName }: Props) {
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Đang gửi...
                   </span>
-                ) : replyTo ? '↩️ Gửi trả lời' : '⭐ Gửi đánh giá'}
+                ) : reviewReplyTo ? '↩️ Gửi trả lời' : '⭐ Gửi đánh giá'}
               </button>
             </form>
             <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
@@ -404,7 +497,7 @@ export function ReviewsSection({ productId, productName }: Props) {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <div className="w-1 h-7 rounded-full" style={{ background: 'linear-gradient(135deg,#7C3AED,#A855F7)' }} />
-          <h2 className="text-lg font-black text-slate-900">Hỏi & Đáp</h2>
+          <h2 className="text-lg font-black text-slate-900">Hỏi & Đáp về {productName}</h2>
           {qaItems.length > 0 && (
             <span className="text-sm font-semibold px-2.5 py-1 rounded-full"
               style={{ background: '#F5F3FF', color: '#7C3AED' }}>
@@ -418,69 +511,33 @@ export function ReviewsSection({ productId, productName }: Props) {
           <div className="text-center py-10 bg-white rounded-2xl border border-slate-200">
             <div className="text-4xl mb-3">💬</div>
             <p className="font-semibold text-slate-700 mb-1">Chưa có câu hỏi nào</p>
-            <p className="text-xs text-slate-400">Bạn có thắc mắc? Đặt câu hỏi bên dưới!</p>
+            <p className="text-xs text-slate-400">Bạn có thắc mắc về {productName}? Đặt câu hỏi bên dưới!</p>
           </div>
         ) : (
           <div className="space-y-4">
             {qaItems.map(qa => (
-              <div key={qa.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                <div className="p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                      style={{ background: 'linear-gradient(135deg, #7C3AED, #A855F7)' }}>
-                      {qa.reviewer_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <p className="font-bold text-slate-900 text-sm">{qa.reviewer_name}</p>
-                        <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                          style={{ background: '#F5F3FF', color: '#7C3AED' }}>❓ Hỏi</span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1 ml-auto">
-                          <Clock size={11} /> {formatDateTime(qa.created_at)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-700 leading-relaxed">{qa.content}</p>
-                    </div>
-                  </div>
-                </div>
-                {qa.replies && qa.replies.filter(r => r.status === 'approved').length > 0 && (
-                  <div className="border-t border-slate-100">
-                    {qa.replies.filter(r => r.status === 'approved').map(reply => (
-                      <div key={reply.id} className="px-5 py-4 flex items-start gap-3"
-                        style={{ background: '#F8FAFC' }}>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
-                          {reply.reviewer_name.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <p className="font-bold text-slate-900 text-xs">{reply.reviewer_name}</p>
-                            {['xanhsoft','admin','shop'].some(k => reply.reviewer_name.toLowerCase().includes(k)) ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                                style={{ background: '#EFF6FF', color: '#2563EB' }}>✅ XanhSoft</span>
-                            ) : (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
-                                style={{ background: '#F0FDF4', color: '#16A34A' }}>↩️ Trả lời</span>
-                            )}
-                            <span className="text-xs text-slate-400 ml-auto flex items-center gap-1">
-                              <Clock size={10} /> {formatDateTime(reply.created_at)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600 leading-relaxed">{reply.content}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <ReviewCard key={qa.id} review={qa}
+                likedIds={likedIds} onLike={handleLike} onReply={handleReplyQa} mode="qa" />
             ))}
           </div>
         )}
 
-        {/* Form hỏi đáp */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="font-bold text-slate-900 mb-1">💬 Đặt câu hỏi</h3>
-          <p className="text-xs text-slate-400 mb-4">Chưa mua sản phẩm? Hỏi ngay, chúng tôi sẽ trả lời sớm nhất!</p>
+        {/* Form hỏi đáp — qa-form riêng, không scroll đến review-form */}
+        <div id="qa-form" className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h3 className="font-bold text-slate-900 mb-1">
+            {qaReplyTo ? '↩️ Trả lời @' + qaReplyTo.name : '💬 Đặt câu hỏi'}
+          </h3>
+          <p className="text-xs text-slate-400 mb-4">
+            {qaReplyTo
+              ? 'Bạn đang trả lời câu hỏi của ' + qaReplyTo.name + '. Nội dung sẽ được duyệt trước khi hiển thị.'
+              : 'Chưa mua sản phẩm? Hỏi ngay về ' + productName + ', chúng tôi thường trả lời trong vài giờ!'}
+          </p>
+          {qaReplyTo && (
+            <button onClick={() => setQaReplyTo(null)}
+              className="text-xs text-slate-400 hover:text-slate-600 mb-3 block">
+              × Huỷ trả lời
+            </button>
+          )}
           <form onSubmit={handleSubmitQa} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tên hiển thị *</label>
@@ -488,35 +545,41 @@ export function ReviewsSection({ productId, productName }: Props) {
                 placeholder="Nguyễn Văn A" className="input" required />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Câu hỏi của bạn *</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                {qaReplyTo ? 'Nội dung trả lời *' : 'Câu hỏi của bạn *'}
+              </label>
               <textarea value={qaForm.content}
                 onChange={e => setQaForm(f => ({ ...f, content: e.target.value }))}
                 rows={4} className="input resize-none"
-                placeholder={'Giao hàng mất bao lâu? Tài khoản dùng được mấy thiết bị?...'}
+                placeholder={qaReplyTo
+                  ? 'Trả lời ' + qaReplyTo.name + '...'
+                  : 'VD: Giao hàng mất bao lâu? Tài khoản dùng được mấy thiết bị?...'}
                 required minLength={10} />
               <p className="text-xs text-slate-400 mt-1">{qaForm.content.length}/500 ký tự</p>
             </div>
             <div className="flex items-center justify-between flex-wrap gap-3">
-              <p className="text-xs text-slate-400">
-                Hoặc{' '}
-                <a href="https://zalo.me/0888993991" target="_blank" rel="noopener noreferrer"
-                  className="font-semibold hover:underline" style={{ color: '#2563EB' }}>
-                  chat Zalo
-                </a>{' '}
-                để được tư vấn nhanh hơn
-              </p>
+              {!qaReplyTo && (
+                <p className="text-xs text-slate-400">
+                  Hoặc{' '}
+                  <a href="https://zalo.me/0888993991" target="_blank" rel="noopener noreferrer"
+                    className="font-semibold hover:underline" style={{ color: '#2563EB' }}>
+                    chat Zalo
+                  </a>{' '}
+                  để được tư vấn nhanh hơn
+                </p>
+              )}
               <button type="submit" disabled={qaForm.submitting}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all ml-auto"
                 style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }}>
                 {qaForm.submitting
                   ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   : <Send size={14} />}
-                Gửi câu hỏi
+                {qaReplyTo ? 'Gửi trả lời' : 'Gửi câu hỏi'}
               </button>
             </div>
           </form>
           <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
-            💬 Câu hỏi sẽ được hiển thị sớm tại đây.
+            💬 Câu hỏi sẽ được duyệt trước khi hiển thị. Thường trong vòng vài giờ.
           </div>
         </div>
       </div>
