@@ -69,7 +69,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
 
   const TABS = [
     { id: 'description', label: '📋 Mô Tả & Hướng Dẫn' },
-    { id: 'reviews', label: `⭐ Đánh Giá (${reviews.length})` },
+    { id: 'reviews', label: `⭐ Đánh Giá & Hỏi Đáp (${reviews.length})` },
   ]
 
   return (

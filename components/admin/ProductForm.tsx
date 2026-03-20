@@ -34,6 +34,7 @@ interface Review {
   reviewer_avatar: string | null
   rating: number
   content: string
+  is_verified_purchase: boolean
   created_at: string
 }
 
@@ -53,7 +54,6 @@ interface Props {
   product?: any
 }
 
-// ── Sub-component: pool tài khoản theo biến thể ────────────
 function VariantAccountsManager({ variantId, productId }: { variantId: string; productId?: string }) {
   const [accounts, setAccounts] = useState<any[]>([])
   const [bulkText, setBulkText] = useState('')
@@ -98,7 +98,7 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
     const { error } = await supabase.from('product_ready_accounts').insert(records)
     if (error) toast.error('Lỗi', { description: error.message })
     else {
-      toast.success(`✅ Thêm ${records.length} tài khoản!`)
+      toast.success('✅ Thêm ' + records.length + ' tài khoản!')
       setBulkText('')
       if (showList) load()
     }
@@ -133,7 +133,7 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
         <button onClick={() => setShowList(v => !v)}
           className="text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all"
           style={{ background: '#EFF6FF', color: '#2563EB' }}>
-          {showList ? 'Ẩn danh sách' : `Xem danh sách (${accounts.length})`}
+          {showList ? 'Ẩn danh sách' : 'Xem danh sách (' + accounts.length + ')'}
         </button>
       </div>
 
@@ -145,11 +145,11 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
         onChange={e => setBulkText(e.target.value)}
         rows={3}
         className="input font-mono text-xs resize-none mb-2"
-        placeholder={'brake1@gmail.com|pass123|acc clean, chưa đổi pass\nbrake2@gmail.com|pass456|team US'}
+        placeholder={'brake1@gmail.com|pass123|acc clean\nbrake2@gmail.com|pass456|team US'}
       />
       <div className="flex justify-between items-center">
         <p className="text-xs text-slate-400">
-          {bulkText.trim() ? `${bulkText.trim().split('\n').filter(l => l.includes('|')).length} dòng hợp lệ` : ''}
+          {bulkText.trim() ? bulkText.trim().split('\n').filter(l => l.includes('|')).length + ' dòng hợp lệ' : ''}
         </p>
         <button onClick={handleSave} disabled={saving || !bulkText.trim()}
           className="text-xs font-bold px-4 py-2 rounded-xl text-white disabled:opacity-50 transition-all"
@@ -171,9 +171,8 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
               {accounts.map((acc, i) => (
                 <div key={acc.id} className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
                   style={{ background: acc.status === 'assigned' ? '#FFFBEB' : 'white', border: '1px solid #E2E8F0' }}>
-                  <span className={`flex-shrink-0 font-bold px-1.5 py-0.5 rounded-full text-[10px] ${
-                    acc.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
+                  <span className={'flex-shrink-0 font-bold px-1.5 py-0.5 rounded-full text-[10px] ' +
+                    (acc.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
                     {acc.status === 'available' ? '✅' : '📦'}
                   </span>
                   <span className="font-mono flex-1 truncate text-slate-700 min-w-0">{acc.email}</span>
@@ -211,7 +210,6 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
   )
 }
 
-// ── Main ProductForm ────────────────────────────────────────
 export function ProductForm({ categories, product }: Props) {
   const isEdit = !!product
   const coverInputRef = useRef<HTMLInputElement>(null)
@@ -273,12 +271,17 @@ export function ProductForm({ categories, product }: Props) {
 
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewsLoaded, setReviewsLoaded] = useState(false)
-  const [newReview, setNewReview] = useState({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '' })
+  const [newReview, setNewReview] = useState({
+    reviewer_name: '',
+    rating: 5,
+    content: '',
+    reviewer_avatar: '',
+    is_verified_purchase: false,
+  })
   const [savingReview, setSavingReview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'content' | 'variants' | 'accounts' | 'reviews'>('basic')
 
-  // Product-level ready accounts (tab riêng)
   const [accounts, setAccounts] = useState<ReadyAccount[]>([])
   const [accLoading, setAccLoading] = useState(false)
   const [accSaving, setAccSaving] = useState(false)
@@ -298,7 +301,7 @@ export function ProductForm({ categories, product }: Props) {
       .from('product_ready_accounts')
       .select('*, orders(order_code, customer_name)')
       .eq('product_id', product.id)
-      .is('variant_id', null) // chỉ lấy acc product-level
+      .is('variant_id', null)
       .order('created_at', { ascending: true })
     setAccounts((data ?? []) as ReadyAccount[])
     setAccLoading(false)
@@ -324,7 +327,7 @@ export function ProductForm({ categories, product }: Props) {
     if (!records.length) { toast.error('Không có dòng hợp lệ. Format: email|password|thông tin thêm'); setAccSaving(false); return }
     const { error } = await supabase.from('product_ready_accounts').insert(records)
     if (error) toast.error('Lỗi lưu tài khoản', { description: error.message })
-    else { toast.success(`✅ Đã thêm ${records.length} tài khoản!`); setBulkText(''); loadAccounts() }
+    else { toast.success('✅ Đã thêm ' + records.length + ' tài khoản!'); setBulkText(''); loadAccounts() }
     setAccSaving(false)
   }
 
@@ -368,7 +371,7 @@ export function ProductForm({ categories, product }: Props) {
       preview: URL.createObjectURL(file),
     }))
     setExtraImages(prev => [...prev, ...newImages])
-    toast.success(`Đã thêm ${files.length} ảnh!`)
+    toast.success('Đã thêm ' + files.length + ' ảnh!')
   }
 
   const addVariant = () => {
@@ -410,10 +413,11 @@ export function ProductForm({ categories, product }: Props) {
       content: newReview.content,
       reviewer_avatar: newReview.reviewer_avatar || null,
       status: 'approved',
+      is_verified_purchase: newReview.is_verified_purchase,
     }).select().single()
     if (data) {
       setReviews(prev => [data, ...prev])
-      setNewReview({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '' })
+      setNewReview({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '', is_verified_purchase: false })
       toast.success('Đã thêm đánh giá!')
     }
     setSavingReview(false)
@@ -460,12 +464,11 @@ export function ProductForm({ categories, product }: Props) {
         productId = data.id
       }
 
-      // Cover image
       if (coverImage) {
         let imageUrl = coverImage.image_url
         if (coverImage.file) {
           const ext = coverImage.file.name.split('.').pop()
-          imageUrl = await uploadFile(coverImage.file, `${productId}/cover.${ext}`)
+          imageUrl = await uploadFile(coverImage.file, productId + '/cover.' + ext)
         }
         if (coverImage.id) {
           await supabase.from('product_images').update({ image_url: imageUrl, alt_text: form.name, sort_order: 0 }).eq('id', coverImage.id)
@@ -474,13 +477,12 @@ export function ProductForm({ categories, product }: Props) {
         }
       }
 
-      // Extra images
       for (let i = 0; i < extraImages.length; i++) {
         const img = extraImages[i]
         let imageUrl = img.image_url
         if (img.file) {
           const ext = img.file.name.split('.').pop()
-          imageUrl = await uploadFile(img.file, `${productId}/extra-${i + 1}-${Date.now()}.${ext}`)
+          imageUrl = await uploadFile(img.file, productId + '/extra-' + (i + 1) + '-' + Date.now() + '.' + ext)
         }
         if (img.id) {
           await supabase.from('product_images').update({ image_url: imageUrl, alt_text: img.alt_text || form.name, sort_order: i + 1 }).eq('id', img.id)
@@ -489,12 +491,11 @@ export function ProductForm({ categories, product }: Props) {
         }
       }
 
-      // Variants
       if (variants.length > 0) {
         if (isEdit) {
           const keepIds = variants.filter(v => v.id).map(v => v.id!)
           if (keepIds.length > 0) {
-            await supabase.from('product_variants').delete().eq('product_id', productId).not('id', 'in', `(${keepIds.join(',')})`)
+            await supabase.from('product_variants').delete().eq('product_id', productId).not('id', 'in', '(' + keepIds.join(',') + ')')
           } else {
             await supabase.from('product_variants').delete().eq('product_id', productId)
           }
@@ -543,11 +544,11 @@ export function ProductForm({ categories, product }: Props) {
 
   const TABS = [
     { id: 'basic', label: '📋 Thông Tin' },
-    { id: 'images', label: `🖼️ Hình Ảnh (${(coverImage ? 1 : 0) + extraImages.length})` },
+    { id: 'images', label: '🖼️ Hình Ảnh (' + ((coverImage ? 1 : 0) + extraImages.length) + ')' },
     { id: 'content', label: '📝 Nội Dung' },
-    { id: 'variants', label: `🔧 Biến Thể (${variants.length})` },
-    { id: 'accounts', label: `🔐 Tài Khoản Cấp Sẵn${accounts.length > 0 ? ` (${availableCount} còn)` : ''}` },
-    { id: 'reviews', label: `⭐ Đánh Giá (${reviews.length})` },
+    { id: 'variants', label: '🔧 Biến Thể (' + variants.length + ')' },
+    { id: 'accounts', label: '🔐 Tài Khoản Cấp Sẵn' + (accounts.length > 0 ? ' (' + availableCount + ' còn)' : '') },
+    { id: 'reviews', label: '⭐ Đánh Giá (' + reviews.length + ')' },
   ]
 
   return (
@@ -848,8 +849,6 @@ export function ProductForm({ categories, product }: Props) {
                       <span className="absolute -top-3 left-4 text-xs font-bold px-2.5 py-1 rounded-full text-white"
                         style={{ background: '#2563EB' }}>★ Mặc định</span>
                     )}
-
-                    {/* Fields */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Tên biến thể</label>
@@ -890,7 +889,6 @@ export function ProductForm({ categories, product }: Props) {
                       </div>
                     </div>
 
-                    {/* Delivery type cho biến thể này */}
                     <div className="mt-4">
                       <label className="block text-xs font-bold text-slate-600 mb-2">Loại giao hàng biến thể này</label>
                       <div className="flex gap-3">
@@ -905,7 +903,7 @@ export function ProductForm({ categories, product }: Props) {
                               background: variant.delivery_type === opt.value ? '#EFF6FF' : '#F8FAFC',
                             }}>
                             <input type="radio"
-                              name={`dt_${index}`}
+                              name={'dt_' + index}
                               checked={variant.delivery_type === opt.value}
                               onChange={() => updateVariant(index, 'delivery_type', opt.value)}
                               style={{ accentColor: '#2563EB', marginTop: '2px', flexShrink: 0 }} />
@@ -918,19 +916,14 @@ export function ProductForm({ categories, product }: Props) {
                       </div>
                     </div>
 
-                    {/* Pool tài khoản — chỉ hiện nếu cấp sẵn VÀ đã save (có id) */}
                     {variant.delivery_type === 'ready_account' && variant.id && product?.id && (
                       <VariantAccountsManager variantId={variant.id} productId={product.id} />
                     )}
-
-                    {/* Chưa save thì nhắc */}
                     {variant.delivery_type === 'ready_account' && !variant.id && (
                       <div className="mt-3 p-3 rounded-xl text-xs font-semibold" style={{ background: '#FFFBEB', color: '#D97706' }}>
                         ⚠️ Lưu sản phẩm trước để thêm tài khoản vào pool biến thể này
                       </div>
                     )}
-
-                    {/* Thông báo chính chủ */}
                     {variant.delivery_type === 'upgrade_owner' && (
                       <div className="mt-3 p-3 rounded-xl text-xs font-semibold" style={{ background: '#EFF6FF', color: '#1D4ED8' }}>
                         📧 Khách chọn biến thể này sẽ thấy ô nhập email chính chủ khi mua hàng
@@ -954,7 +947,7 @@ export function ProductForm({ categories, product }: Props) {
         </div>
       )}
 
-      {/* ── Tab 5: Ready Accounts (product-level, không có variant_id) ── */}
+      {/* ── Tab 5: Ready Accounts ── */}
       {activeTab === 'accounts' && (
         <div className="space-y-6">
           {!isReadyAccount ? (
@@ -973,7 +966,7 @@ export function ProductForm({ categories, product }: Props) {
               <div className="rounded-2xl p-4 border" style={{ background: '#FFFBEB', borderColor: '#FDE68A' }}>
                 <p className="text-sm font-bold mb-1" style={{ color: '#D97706' }}>💡 Tab này là pool chung (không theo biến thể)</p>
                 <p className="text-xs" style={{ color: '#D97706' }}>
-                  Nếu sản phẩm có biến thể, hãy thêm tài khoản trực tiếp trong từng biến thể ở tab <strong>Biến Thể</strong>.
+                  Nếu sản phẩm có biến thể, hãy thêm tài khoản trong từng biến thể ở tab <strong>Biến Thể</strong>.
                   Pool này dành cho sản phẩm không có biến thể.
                 </p>
               </div>
@@ -1004,12 +997,12 @@ export function ProductForm({ categories, product }: Props) {
                   onChange={e => setBulkText(e.target.value)}
                   rows={6}
                   className="input font-mono text-sm resize-none"
-                  placeholder={`brake1@gmail.com|matkhau123|acc clean\nbrake2@gmail.com|matkhau456|team US`}
+                  placeholder={'brake1@gmail.com|matkhau123|acc clean\nbrake2@gmail.com|matkhau456|team US'}
                 />
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-xs text-slate-400">
                     {bulkText.trim()
-                      ? `${bulkText.trim().split('\n').filter(l => l.trim() && l.includes('|')).length} dòng hợp lệ`
+                      ? bulkText.trim().split('\n').filter(l => l.trim() && l.includes('|')).length + ' dòng hợp lệ'
                       : 'Chưa có dữ liệu'}
                   </p>
                   <button onClick={handleSaveAccounts} disabled={accSaving || !bulkText.trim()}
@@ -1046,9 +1039,8 @@ export function ProductForm({ categories, product }: Props) {
                       <div key={acc.id ?? i}
                         className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors"
                         style={{ background: acc.status === 'assigned' ? '#FFFBEB' : 'white' }}>
-                        <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${
-                          acc.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
+                        <span className={'flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ' +
+                          (acc.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
                           {acc.status === 'available' ? '✅ Trống' : '📦 Đã giao'}
                         </span>
                         <div className="flex-1 grid grid-cols-3 gap-3 min-w-0">
@@ -1133,6 +1125,13 @@ export function ProductForm({ categories, product }: Props) {
                       rows={3} className="input resize-none text-sm"
                       placeholder="Sản phẩm rất tốt, giao hàng nhanh..." />
                   </div>
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox"
+                      checked={newReview.is_verified_purchase}
+                      onChange={e => setNewReview(r => ({ ...r, is_verified_purchase: e.target.checked }))}
+                      className="w-4 h-4 rounded" style={{ accentColor: '#16A34A' }} />
+                    <span className="text-sm font-medium text-slate-700">✅ Khách Đã Mua Sản Phẩm</span>
+                  </label>
                   <button onClick={handleAddReview} disabled={savingReview}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
                     style={{ background: '#2563EB' }}>
@@ -1158,8 +1157,14 @@ export function ProductForm({ categories, product }: Props) {
                           {review.reviewer_name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
                             <p className="font-semibold text-sm text-slate-900">{review.reviewer_name}</p>
+                            {review.is_verified_purchase && (
+                              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={{ background: '#DCFCE7', color: '#16A34A' }}>
+                                ✅ Đã mua
+                              </span>
+                            )}
                             <span className="text-xs">{'⭐'.repeat(review.rating)}</span>
                           </div>
                           <p className="text-sm text-slate-600">{review.content}</p>
