@@ -139,6 +139,7 @@ export interface CartStore {
   addItem: (product: Product, variant: ProductVariant | null, quantity?: number, upgradeEmail?: string) => void
   removeItem: (productId: string, variantId?: string | null) => void
   updateQuantity: (productId: string, variantId: string | null, quantity: number) => void
+  updateUpgradeEmail: (productId: string, variantId: string | null, email: string) => void
   clearCart: () => void
   openCart: () => void
   closeCart: () => void

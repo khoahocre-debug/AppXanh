@@ -58,6 +58,16 @@ export const useCartStore = create<CartStore>()(
         }))
       },
 
+      updateUpgradeEmail: (productId: string, variantId: string | null, email: string) => {
+        set((state) => ({
+          items: state.items.map((i) =>
+            i.productId === productId && (i.variantId ?? null) === variantId
+              ? { ...i, upgradeEmail: email }
+              : i
+          ),
+        }))
+      },
+
       clearCart: () => set({ items: [] }),
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
