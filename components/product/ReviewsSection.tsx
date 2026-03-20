@@ -140,7 +140,7 @@ export function ReviewsSection({ productId, productName }: Props) {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [hasPurchased, setHasPurchased] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null)
-  const [activeSection, setActiveSection] = useState<'reviews' | 'qa'>('qa')
+  const [activeSection, setActiveSection] = useState<'reviews' | 'qa'>('reviews')
   const [form, setForm] = useState({ name: '', rating: 0, content: '', submitting: false })
   const [qaForm, setQaForm] = useState({ name: '', content: '', submitting: false })
 
@@ -177,8 +177,6 @@ export function ReviewsSection({ productId, productName }: Props) {
         o.order_items?.some((i: any) => i.product_id === productId)
       )
       setHasPurchased(purchased)
-      // Nếu đã mua → default sang tab reviews
-      if (purchased) setActiveSection('reviews')
 
       const { data: likes } = await supabase.from('review_likes').select('review_id').eq('user_id', session.user.id)
       setLikedIds(new Set((likes ?? []).map((l: any) => l.review_id)))
@@ -213,14 +211,14 @@ export function ReviewsSection({ productId, productName }: Props) {
     e.preventDefault()
     if (!form.name.trim()) { toast.error('Vui lòng điền tên'); return }
     if (form.content.length < 10) { toast.error('Bình luận tối thiểu 10 ký tự'); return }
-    if (hasPurchased && !replyTo && form.rating === 0) { toast.error('Vui lòng chọn số sao'); return }
+    if (!replyTo && form.rating === 0) { toast.error('Vui lòng chọn số sao'); return }
     setForm(f => ({ ...f, submitting: true }))
     const supabase = createClient()
     const { error } = await supabase.from('product_reviews').insert({
       product_id: productId,
       user_id: currentUser?.id ?? null,
       reviewer_name: form.name,
-      rating: hasPurchased && !replyTo && form.rating > 0 ? form.rating : null,
+      rating: !replyTo && form.rating > 0 ? form.rating : null,
       content: form.content,
       status: 'pending',
       is_verified_purchase: hasPurchased && !replyTo,
@@ -247,7 +245,7 @@ export function ReviewsSection({ productId, productName }: Props) {
       product_id: productId,
       user_id: currentUser?.id ?? null,
       reviewer_name: qaForm.name,
-      rating: null,        // ← null thay vì 0, tránh vi phạm check constraint
+      rating: null,
       content: qaForm.content,
       status: 'pending',
       is_verified_purchase: false,
@@ -277,24 +275,22 @@ export function ReviewsSection({ productId, productName }: Props) {
   return (
     <div className="space-y-6">
 
-      {/* Tabs — chỉ hiện tab Đánh Giá nếu đã mua */}
+      {/* Tabs — tất cả đều thấy cả 2 tab */}
       <div className="flex gap-2 border-b border-slate-200">
-        {hasPurchased && (
-          <button onClick={() => setActiveSection('reviews')}
-            className="flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all"
-            style={{
-              borderColor: activeSection === 'reviews' ? '#2563EB' : 'transparent',
-              color: activeSection === 'reviews' ? '#1D4ED8' : '#64748B',
-            }}>
-            ⭐ Đánh Giá
-            {ratingReviews.length > 0 && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-                style={{ background: '#EFF6FF', color: '#2563EB' }}>
-                {ratingReviews.length}
-              </span>
-            )}
-          </button>
-        )}
+        <button onClick={() => setActiveSection('reviews')}
+          className="flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all"
+          style={{
+            borderColor: activeSection === 'reviews' ? '#2563EB' : 'transparent',
+            color: activeSection === 'reviews' ? '#1D4ED8' : '#64748B',
+          }}>
+          ⭐ Đánh Giá
+          {ratingReviews.length > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+              style={{ background: '#EFF6FF', color: '#2563EB' }}>
+              {ratingReviews.length}
+            </span>
+          )}
+        </button>
         <button onClick={() => setActiveSection('qa')}
           className="flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all"
           style={{
@@ -311,9 +307,10 @@ export function ReviewsSection({ productId, productName }: Props) {
         </button>
       </div>
 
-      {/* ── ĐÁNH GIÁ (chỉ người đã mua) ── */}
-      {activeSection === 'reviews' && hasPurchased && (
+      {/* ── ĐÁNH GIÁ — tất cả đều xem được, chỉ buyer mới viết được ── */}
+      {activeSection === 'reviews' && (
         <div className="space-y-6">
+          {/* Rating summary */}
           {ratingReviews.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col sm:flex-row items-center gap-6">
               <div className="text-center flex-shrink-0">
@@ -349,6 +346,7 @@ export function ReviewsSection({ productId, productName }: Props) {
             </div>
           )}
 
+          {/* Reviews list */}
           {ratingReviews.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
               <div className="text-5xl mb-3">⭐</div>
@@ -365,64 +363,74 @@ export function ReviewsSection({ productId, productName }: Props) {
             </div>
           )}
 
-          {/* Form đánh giá */}
+          {/* Form đánh giá — buyer thấy form, non-buyer thấy thông báo */}
           <div id="review-form" className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h3 className="font-bold text-slate-900 mb-2">
-              {replyTo ? '↩️ Trả lời @' + replyTo.name : '✍️ Viết đánh giá'}
-            </h3>
-            {replyTo && (
-              <button onClick={() => setReplyTo(null)}
-                className="text-xs text-slate-400 hover:text-slate-600 mb-3 block">
-                × Huỷ trả lời
-              </button>
-            )}
-            {!replyTo && (
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full mb-4"
-                style={{ background: '#DCFCE7', color: '#166534' }}>
-                <CheckCircle2 size={12} /> Bạn đã mua sản phẩm này — có thể đánh giá sao
-              </div>
-            )}
-            <form onSubmit={handleSubmitReview} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tên hiển thị *</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Nguyễn Văn A" className="input" required />
-              </div>
-              {!replyTo && (
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Đánh giá *</label>
-                  <StarPicker value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
-                  {form.rating > 0 && (
-                    <p className="text-xs mt-1" style={{ color: '#F59E0B' }}>
-                      {['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Xuất sắc!'][form.rating]}
-                    </p>
+            {hasPurchased ? (
+              <>
+                <h3 className="font-bold text-slate-900 mb-2">
+                  {replyTo ? '↩️ Trả lời @' + replyTo.name : '✍️ Viết đánh giá'}
+                </h3>
+                {replyTo && (
+                  <button onClick={() => setReplyTo(null)}
+                    className="text-xs text-slate-400 hover:text-slate-600 mb-3 block">
+                    × Huỷ trả lời
+                  </button>
+                )}
+                {!replyTo && (
+                  <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full mb-4"
+                    style={{ background: '#DCFCE7', color: '#166534' }}>
+                    <CheckCircle2 size={12} /> Bạn đã mua sản phẩm này — có thể đánh giá sao
+                  </div>
+                )}
+                <form onSubmit={handleSubmitReview} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tên hiển thị *</label>
+                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Nguyễn Văn A" className="input" required />
+                  </div>
+                  {!replyTo && (
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Đánh giá *</label>
+                      <StarPicker value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
+                      {form.rating > 0 && (
+                        <p className="text-xs mt-1" style={{ color: '#F59E0B' }}>
+                          {['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Xuất sắc!'][form.rating]}
+                        </p>
+                      )}
+                    </div>
                   )}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                      {replyTo ? 'Nội dung trả lời *' : 'Nội dung đánh giá *'}
+                    </label>
+                    <textarea value={form.content}
+                      onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+                      rows={4} className="input resize-none"
+                      placeholder={replyTo ? 'Trả lời ' + replyTo.name + '...' : 'Chia sẻ trải nghiệm của bạn...'}
+                      required minLength={10} />
+                    <p className="text-xs text-slate-400 mt-1">{form.content.length}/500 ký tự</p>
+                  </div>
+                  <button type="submit" disabled={form.submitting}
+                    className="btn-primary py-3 px-6 disabled:opacity-60">
+                    {form.submitting ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Đang gửi...
+                      </span>
+                    ) : replyTo ? '↩️ Gửi trả lời' : '⭐ Gửi đánh giá'}
+                  </button>
+                </form>
+                <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
+                  💬 Bình luận sẽ được duyệt trước khi hiển thị.
                 </div>
-              )}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  {replyTo ? 'Nội dung trả lời *' : 'Nội dung đánh giá *'}
-                </label>
-                <textarea value={form.content}
-                  onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-                  rows={4} className="input resize-none"
-                  placeholder={replyTo ? 'Trả lời ' + replyTo.name + '...' : 'Chia sẻ trải nghiệm của bạn...'}
-                  required minLength={10} />
-                <p className="text-xs text-slate-400 mt-1">{form.content.length}/500 ký tự</p>
+              </>
+            ) : (
+              <div className="py-6 text-center">
+                <div className="text-3xl mb-3">🛒</div>
+                <p className="font-semibold text-slate-700 mb-1">Chỉ khách đã mua mới viết đánh giá được</p>
+                <p className="text-sm text-slate-400">Mua sản phẩm để chia sẻ trải nghiệm và chọn số sao</p>
               </div>
-              <button type="submit" disabled={form.submitting}
-                className="btn-primary py-3 px-6 disabled:opacity-60">
-                {form.submitting ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Đang gửi...
-                  </span>
-                ) : replyTo ? '↩️ Gửi trả lời' : '⭐ Gửi đánh giá'}
-              </button>
-            </form>
-            <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
-              💬 Bình luận sẽ được duyệt trước khi hiển thị.
-            </div>
+            )}
           </div>
         </div>
       )}
