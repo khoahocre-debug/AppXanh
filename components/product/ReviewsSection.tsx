@@ -24,10 +24,9 @@ interface Props {
 }
 
 function formatDateTime(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleString('vi-VN', {
+  return new Date(dateStr).toLocaleString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+    hour: '2-digit', minute: '2-digit',
   })
 }
 
@@ -52,9 +51,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   )
 }
 
-function ReviewCard({
-  review, currentUserId, likedIds, onLike, onReply, depth = 0
-}: {
+function ReviewCard({ review, currentUserId, likedIds, onLike, onReply, depth = 0 }: {
   review: Review
   currentUserId: string | null
   likedIds: Set<string>
@@ -63,42 +60,39 @@ function ReviewCard({
   depth?: number
 }) {
   const isLiked = likedIds.has(review.id)
-
   return (
     <div className={depth > 0 ? 'ml-8 border-l-2 pl-4' : ''}
       style={{ borderColor: depth > 0 ? '#E2E8F0' : 'transparent' }}>
       <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
-              {review.reviewer_name.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <p className="font-bold text-slate-900 text-sm">{review.reviewer_name}</p>
-                {review.is_verified_purchase && (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: '#DCFCE7', color: '#166534' }}>
-                    <CheckCircle2 size={11} /> Đã mua sản phẩm
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                {review.rating && review.rating > 0 && (
-                  <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(s => (
-                      <svg key={s} width="12" height="12" viewBox="0 0 24 24"
-                        fill={s <= review.rating! ? '#F59E0B' : '#E2E8F0'}>
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                      </svg>
-                    ))}
-                  </div>
-                )}
-                <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <Clock size={11} /> {formatDateTime(review.created_at)}
+        <div className="flex items-start gap-3 mb-3">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
+            {review.reviewer_name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+              <p className="font-bold text-slate-900 text-sm">{review.reviewer_name}</p>
+              {review.is_verified_purchase && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: '#DCFCE7', color: '#166534' }}>
+                  <CheckCircle2 size={11} /> Đã mua sản phẩm
                 </span>
-              </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {review.rating && review.rating > 0 && (
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(s => (
+                    <svg key={s} width="12" height="12" viewBox="0 0 24 24"
+                      fill={s <= review.rating! ? '#F59E0B' : '#E2E8F0'}>
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                  ))}
+                </div>
+              )}
+              <span className="text-xs text-slate-400 flex items-center gap-1">
+                <Clock size={11} /> {formatDateTime(review.created_at)}
+              </span>
             </div>
           </div>
         </div>
@@ -106,8 +100,7 @@ function ReviewCard({
         <p className="text-slate-700 text-sm leading-relaxed mb-3">{review.content}</p>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => onLike(review.id)}
+          <button onClick={() => onLike(review.id)}
             className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
             style={{
               background: isLiked ? '#EFF6FF' : '#F8FAFC',
@@ -118,10 +111,8 @@ function ReviewCard({
             {review.likes_count > 0 && <span>{review.likes_count}</span>}
             Hữu ích
           </button>
-
           {depth === 0 && (
-            <button
-              onClick={() => onReply(review.id, review.reviewer_name)}
+            <button onClick={() => onReply(review.id, review.reviewer_name)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
               style={{ background: '#F8FAFC', color: '#64748B', border: '1px solid #E2E8F0' }}>
               <Reply size={13} /> Trả lời
@@ -149,10 +140,7 @@ export function ReviewsSection({ productId, productName }: Props) {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [hasPurchased, setHasPurchased] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null)
-
-  // Tab: reviews | qa
-  const [activeSection, setActiveSection] = useState<'reviews' | 'qa'>('reviews')
-
+  const [activeSection, setActiveSection] = useState<'reviews' | 'qa'>('qa')
   const [form, setForm] = useState({ name: '', rating: 0, content: '', submitting: false })
   const [qaForm, setQaForm] = useState({ name: '', content: '', submitting: false })
 
@@ -160,24 +148,17 @@ export function ReviewsSection({ productId, productName }: Props) {
 
   const loadData = async () => {
     const supabase = createClient()
-
     const { data: reviewsData } = await supabase
-      .from('product_reviews')
-      .select('*')
-      .eq('product_id', productId)
-      .eq('status', 'approved')
+      .from('product_reviews').select('*')
+      .eq('product_id', productId).eq('status', 'approved')
       .order('created_at', { ascending: false })
 
-    // Build tree
     const map: Record<string, Review> = {}
     const roots: Review[] = []
     ;(reviewsData ?? []).forEach(r => { map[r.id] = { ...r, replies: [] } })
     ;(reviewsData ?? []).forEach(r => {
-      if (r.parent_id && map[r.parent_id]) {
-        map[r.parent_id].replies!.push(map[r.id])
-      } else if (!r.parent_id) {
-        roots.push(map[r.id])
-      }
+      if (r.parent_id && map[r.parent_id]) map[r.parent_id].replies!.push(map[r.id])
+      else if (!r.parent_id) roots.push(map[r.id])
     })
     setAllReviews(roots)
 
@@ -185,22 +166,21 @@ export function ReviewsSection({ productId, productName }: Props) {
     if (session?.user) {
       const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
       setCurrentUser(profile)
-      const displayName = profile?.full_name || session.user.email?.split('@')[0] || ''
-      setForm(f => ({ ...f, name: displayName }))
-      setQaForm(f => ({ ...f, name: displayName }))
+      const name = profile?.full_name || session.user.email?.split('@')[0] || ''
+      setForm(f => ({ ...f, name }))
+      setQaForm(f => ({ ...f, name }))
 
       const { data: orders } = await supabase
-        .from('orders')
-        .select('id, order_items!inner(product_id)')
-        .eq('user_id', session.user.id)
-        .eq('order_status', 'completed')
+        .from('orders').select('id, order_items!inner(product_id)')
+        .eq('user_id', session.user.id).eq('order_status', 'completed')
       const purchased = (orders ?? []).some((o: any) =>
         o.order_items?.some((i: any) => i.product_id === productId)
       )
       setHasPurchased(purchased)
+      // Nếu đã mua → default sang tab reviews
+      if (purchased) setActiveSection('reviews')
 
-      const { data: likes } = await supabase
-        .from('review_likes').select('review_id').eq('user_id', session.user.id)
+      const { data: likes } = await supabase.from('review_likes').select('review_id').eq('user_id', session.user.id)
       setLikedIds(new Set((likes ?? []).map((l: any) => l.review_id)))
     }
     setLoading(false)
@@ -211,7 +191,6 @@ export function ReviewsSection({ productId, productName }: Props) {
     const supabase = createClient()
     const isLiked = likedIds.has(reviewId)
     const target = allReviews.find(r => r.id === reviewId)
-
     if (isLiked) {
       await supabase.from('review_likes').delete().eq('review_id', reviewId).eq('user_id', currentUser.id)
       await supabase.from('product_reviews').update({ likes_count: Math.max(0, (target?.likes_count ?? 1) - 1) }).eq('id', reviewId)
@@ -235,7 +214,6 @@ export function ReviewsSection({ productId, productName }: Props) {
     if (!form.name.trim()) { toast.error('Vui lòng điền tên'); return }
     if (form.content.length < 10) { toast.error('Bình luận tối thiểu 10 ký tự'); return }
     if (hasPurchased && !replyTo && form.rating === 0) { toast.error('Vui lòng chọn số sao'); return }
-
     setForm(f => ({ ...f, submitting: true }))
     const supabase = createClient()
     const { error } = await supabase.from('product_reviews').insert({
@@ -249,12 +227,11 @@ export function ReviewsSection({ productId, productName }: Props) {
       parent_id: replyTo?.id ?? null,
       likes_count: 0,
     })
-
     if (error) {
       toast.error('Lỗi khi gửi', { description: error.message })
     } else {
       toast.success('Đã gửi! Đang chờ duyệt.')
-      setForm(f => ({ ...f, rating: 0, content: '', submitting: false }))
+      setForm(f => ({ ...f, rating: 0, content: '' }))
       setReplyTo(null)
     }
     setForm(f => ({ ...f, submitting: false }))
@@ -264,37 +241,32 @@ export function ReviewsSection({ productId, productName }: Props) {
     e.preventDefault()
     if (!qaForm.name.trim()) { toast.error('Vui lòng điền tên'); return }
     if (qaForm.content.length < 10) { toast.error('Câu hỏi tối thiểu 10 ký tự'); return }
-
     setQaForm(f => ({ ...f, submitting: true }))
     const supabase = createClient()
     const { error } = await supabase.from('product_reviews').insert({
       product_id: productId,
       user_id: currentUser?.id ?? null,
       reviewer_name: qaForm.name,
-      rating: 0,
+      rating: null,        // ← null thay vì 0, tránh vi phạm check constraint
       content: qaForm.content,
       status: 'pending',
       is_verified_purchase: false,
       parent_id: null,
       likes_count: 0,
     })
-
     if (error) {
       toast.error('Lỗi khi gửi', { description: error.message })
     } else {
       toast.success('Câu hỏi đã được gửi! Chúng tôi sẽ trả lời sớm nhất.')
-      setQaForm(f => ({ ...f, content: '', submitting: false }))
+      setQaForm(f => ({ ...f, content: '' }))
     }
     setQaForm(f => ({ ...f, submitting: false }))
   }
 
-  // Tách reviews (có rating > 0) và Q&A (rating = 0 hoặc null)
   const ratingReviews = allReviews.filter(r => r.rating && r.rating > 0)
   const qaItems = allReviews.filter(r => !r.rating || r.rating === 0)
-
   const avgRating = ratingReviews.length > 0
-    ? ratingReviews.reduce((s, r) => s + (r.rating ?? 0), 0) / ratingReviews.length
-    : 0
+    ? ratingReviews.reduce((s, r) => s + (r.rating ?? 0), 0) / ratingReviews.length : 0
 
   if (loading) return (
     <div className="flex justify-center py-10">
@@ -305,25 +277,25 @@ export function ReviewsSection({ productId, productName }: Props) {
   return (
     <div className="space-y-6">
 
-      {/* Section tabs */}
+      {/* Tabs — chỉ hiện tab Đánh Giá nếu đã mua */}
       <div className="flex gap-2 border-b border-slate-200">
-        <button
-          onClick={() => setActiveSection('reviews')}
-          className="flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all"
-          style={{
-            borderColor: activeSection === 'reviews' ? '#2563EB' : 'transparent',
-            color: activeSection === 'reviews' ? '#1D4ED8' : '#64748B',
-          }}>
-          ⭐ Đánh Giá
-          {ratingReviews.length > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-bold"
-              style={{ background: '#EFF6FF', color: '#2563EB' }}>
-              {ratingReviews.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveSection('qa')}
+        {hasPurchased && (
+          <button onClick={() => setActiveSection('reviews')}
+            className="flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all"
+            style={{
+              borderColor: activeSection === 'reviews' ? '#2563EB' : 'transparent',
+              color: activeSection === 'reviews' ? '#1D4ED8' : '#64748B',
+            }}>
+            ⭐ Đánh Giá
+            {ratingReviews.length > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-bold"
+                style={{ background: '#EFF6FF', color: '#2563EB' }}>
+                {ratingReviews.length}
+              </span>
+            )}
+          </button>
+        )}
+        <button onClick={() => setActiveSection('qa')}
           className="flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all"
           style={{
             borderColor: activeSection === 'qa' ? '#7C3AED' : 'transparent',
@@ -339,16 +311,13 @@ export function ReviewsSection({ productId, productName }: Props) {
         </button>
       </div>
 
-      {/* ── PHẦN ĐÁNH GIÁ ── */}
-      {activeSection === 'reviews' && (
+      {/* ── ĐÁNH GIÁ (chỉ người đã mua) ── */}
+      {activeSection === 'reviews' && hasPurchased && (
         <div className="space-y-6">
-          {/* Rating summary */}
           {ratingReviews.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col sm:flex-row items-center gap-6">
               <div className="text-center flex-shrink-0">
-                <p className="text-5xl font-black" style={{ color: '#F59E0B' }}>
-                  {avgRating.toFixed(1)}
-                </p>
+                <p className="text-5xl font-black" style={{ color: '#F59E0B' }}>{avgRating.toFixed(1)}</p>
                 <div className="flex justify-center gap-0.5 mt-1">
                   {[1,2,3,4,5].map(s => (
                     <svg key={s} width="16" height="16" viewBox="0 0 24 24"
@@ -370,7 +339,7 @@ export function ReviewsSection({ productId, productName }: Props) {
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                       </svg>
                       <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#F1F5F9' }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: pct + '%', background: '#F59E0B' }} />
+                        <div className="h-full rounded-full" style={{ width: pct + '%', background: '#F59E0B' }} />
                       </div>
                       <span className="text-xs text-slate-400 w-5">{count}</span>
                     </div>
@@ -380,7 +349,6 @@ export function ReviewsSection({ productId, productName }: Props) {
             </div>
           )}
 
-          {/* Reviews list */}
           {ratingReviews.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
               <div className="text-5xl mb-3">⭐</div>
@@ -397,9 +365,9 @@ export function ReviewsSection({ productId, productName }: Props) {
             </div>
           )}
 
-          {/* Form viết đánh giá */}
+          {/* Form đánh giá */}
           <div id="review-form" className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h3 className="font-bold text-slate-900 mb-1">
+            <h3 className="font-bold text-slate-900 mb-2">
               {replyTo ? '↩️ Trả lời @' + replyTo.name : '✍️ Viết đánh giá'}
             </h3>
             {replyTo && (
@@ -408,27 +376,19 @@ export function ReviewsSection({ productId, productName }: Props) {
                 × Huỷ trả lời
               </button>
             )}
-            {!replyTo && hasPurchased && (
+            {!replyTo && (
               <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full mb-4"
                 style={{ background: '#DCFCE7', color: '#166534' }}>
                 <CheckCircle2 size={12} /> Bạn đã mua sản phẩm này — có thể đánh giá sao
               </div>
             )}
-            {!replyTo && !hasPurchased && (
-              <p className="text-xs text-slate-400 mb-4">
-                💡 Mua sản phẩm để đánh giá kèm số sao và nhận tick xác nhận
-              </p>
-            )}
-
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tên hiển thị *</label>
-                <input value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Nguyễn Văn A" className="input" required />
               </div>
-
-              {!replyTo && hasPurchased && (
+              {!replyTo && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Đánh giá *</label>
                   <StarPicker value={form.rating} onChange={v => setForm(f => ({ ...f, rating: v }))} />
@@ -439,7 +399,6 @@ export function ReviewsSection({ productId, productName }: Props) {
                   )}
                 </div>
               )}
-
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                   {replyTo ? 'Nội dung trả lời *' : 'Nội dung đánh giá *'}
@@ -447,11 +406,10 @@ export function ReviewsSection({ productId, productName }: Props) {
                 <textarea value={form.content}
                   onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
                   rows={4} className="input resize-none"
-                  placeholder={replyTo ? 'Trả lời ' + replyTo.name + '...' : 'Chia sẻ trải nghiệm của bạn về sản phẩm này...'}
+                  placeholder={replyTo ? 'Trả lời ' + replyTo.name + '...' : 'Chia sẻ trải nghiệm của bạn...'}
                   required minLength={10} />
                 <p className="text-xs text-slate-400 mt-1">{form.content.length}/500 ký tự</p>
               </div>
-
               <button type="submit" disabled={form.submitting}
                 className="btn-primary py-3 px-6 disabled:opacity-60">
                 {form.submitting ? (
@@ -462,18 +420,16 @@ export function ReviewsSection({ productId, productName }: Props) {
                 ) : replyTo ? '↩️ Gửi trả lời' : '⭐ Gửi đánh giá'}
               </button>
             </form>
-
             <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
-              💬 Bình luận sẽ được duyệt trước khi hiển thị. Thường trong vòng vài giờ.
+              💬 Bình luận sẽ được duyệt trước khi hiển thị.
             </div>
           </div>
         </div>
       )}
 
-      {/* ── PHẦN HỎI ĐÁP ── */}
+      {/* ── HỎI ĐÁP ── */}
       {activeSection === 'qa' && (
         <div className="space-y-6">
-          {/* Q&A list */}
           {qaItems.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
               <div className="text-5xl mb-3">💬</div>
@@ -503,8 +459,6 @@ export function ReviewsSection({ productId, productName }: Props) {
                       </div>
                     </div>
                   </div>
-
-                  {/* Replies to Q&A */}
                   {qa.replies && qa.replies.filter(r => r.status === 'approved').length > 0 && (
                     <div className="border-t border-slate-100">
                       {qa.replies.filter(r => r.status === 'approved').map(reply => (
@@ -515,11 +469,9 @@ export function ReviewsSection({ productId, productName }: Props) {
                             {reply.reviewer_name.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <p className="font-bold text-slate-900 text-xs">{reply.reviewer_name}</p>
-                              {(reply.reviewer_name.toLowerCase().includes('xanhsoft') ||
-                                reply.reviewer_name.toLowerCase().includes('admin') ||
-                                reply.reviewer_name.toLowerCase().includes('shop')) ? (
+                              {['xanhsoft','admin','shop'].some(k => reply.reviewer_name.toLowerCase().includes(k)) ? (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
                                   style={{ background: '#EFF6FF', color: '#2563EB' }}>✅ XanhSoft</span>
                               ) : (
@@ -541,31 +493,25 @@ export function ReviewsSection({ productId, productName }: Props) {
             </div>
           )}
 
-          {/* Form đặt câu hỏi */}
+          {/* Form hỏi đáp */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <h3 className="font-bold text-slate-900 mb-1">💬 Đặt câu hỏi</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Chưa mua sản phẩm? Hỏi ngay, chúng tôi sẽ trả lời sớm nhất!
-            </p>
-
+            <p className="text-xs text-slate-400 mb-4">Chưa mua sản phẩm? Hỏi ngay, chúng tôi sẽ trả lời sớm nhất!</p>
             <form onSubmit={handleSubmitQa} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tên hiển thị *</label>
-                <input value={qaForm.name}
-                  onChange={e => setQaForm(f => ({ ...f, name: e.target.value }))}
+                <input value={qaForm.name} onChange={e => setQaForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Nguyễn Văn A" className="input" required />
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Câu hỏi của bạn *</label>
                 <textarea value={qaForm.content}
                   onChange={e => setQaForm(f => ({ ...f, content: e.target.value }))}
                   rows={4} className="input resize-none"
-                  placeholder={'Giao hàng mất bao lâu? Tài khoản dùng được mấy thiết bị? ...'}
+                  placeholder={'Giao hàng mất bao lâu? Tài khoản dùng được mấy thiết bị?...'}
                   required minLength={10} />
                 <p className="text-xs text-slate-400 mt-1">{qaForm.content.length}/500 ký tự</p>
               </div>
-
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="text-xs text-slate-400">
                   Hoặc{' '}
@@ -578,14 +524,13 @@ export function ReviewsSection({ productId, productName }: Props) {
                 <button type="submit" disabled={qaForm.submitting}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all"
                   style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }}>
-                  {qaForm.submitting ? (
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : <Send size={14} />}
+                  {qaForm.submitting
+                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <Send size={14} />}
                   Gửi câu hỏi
                 </button>
               </div>
             </form>
-
             <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
               💬 Câu hỏi sẽ được duyệt trước khi hiển thị. Thường trong vòng vài giờ.
             </div>
