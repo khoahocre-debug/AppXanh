@@ -69,6 +69,7 @@ export interface ProductVariant {
   stock: number
   is_default: boolean
   sort_order: number
+  delivery_type?: string
 }
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'

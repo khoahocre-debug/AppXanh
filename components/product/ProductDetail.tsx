@@ -19,11 +19,17 @@ export function ProductDetail({ product }: { product: Product & { product_review
   const [activeImage, setActiveImage] = useState(0)
 
   const selectedVariant = product.product_variants?.find(v => v.id === selectedVariantId) ?? null
+
   const price = selectedVariant?.price ?? product.price
   const compareAt = selectedVariant?.compare_at_price ?? product.compare_at_price
   const discount = discountPercent(price, compareAt ?? 0)
   const stock = selectedVariant?.stock ?? product.stock
   const isOutOfStock = stock === 0
+
+  // ── Delivery type logic: ưu tiên variant, fallback về product ──
+  const effectiveDeliveryType = selectedVariant?.delivery_type ?? product.delivery_type
+  const needsUpgradeEmail = effectiveDeliveryType === 'upgrade_owner'
+  const isReadyAccount = effectiveDeliveryType === 'ready_account'
 
   const images = product.product_images?.sort((a: any, b: any) => a.sort_order - b.sort_order) ?? []
   const coverImage = images[0] ?? null
@@ -34,16 +40,29 @@ export function ProductDetail({ product }: { product: Product & { product_review
     ? ratedReviews.reduce((s: number, r: any) => s + r.rating, 0) / ratedReviews.length
     : 0
 
-  const needsUpgradeEmail = product.delivery_type === 'upgrade_owner' || product.delivery_type === 'both'
+  const handleSelectVariant = (variantId: string) => {
+    setSelectedVariantId(variantId)
+    // Reset email khi chuyển sang biến thể cấp sẵn
+    const v = product.product_variants?.find(v => v.id === variantId)
+    if (v?.delivery_type === 'ready_account') setUpgradeEmail('')
+  }
 
   const handleAddToCart = () => {
     if (isOutOfStock) return
+    if (needsUpgradeEmail && !upgradeEmail.trim()) {
+      toast.error('Vui lòng nhập email cần nâng cấp')
+      return
+    }
     addItem(product, selectedVariant, quantity, upgradeEmail)
     toast.success('Đã thêm vào giỏ hàng!', { description: product.name })
   }
 
   const handleBuyNow = () => {
     if (isOutOfStock) return
+    if (needsUpgradeEmail && !upgradeEmail.trim()) {
+      toast.error('Vui lòng nhập email cần nâng cấp')
+      return
+    }
     addItem(product, selectedVariant, quantity, upgradeEmail)
     window.location.href = '/checkout'
   }
@@ -200,36 +219,72 @@ export function ProductDetail({ product }: { product: Product & { product_review
             <div>
               <p className="text-sm font-bold text-slate-700 mb-2">Chọn gói:</p>
               <div className="flex flex-wrap gap-2">
-                {product.product_variants.map((v: any) => (
-                  <button key={v.id} onClick={() => setSelectedVariantId(v.id)}
-                    disabled={v.stock === 0}
-                    className="px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all disabled:opacity-40"
-                    style={{
-                      borderColor: selectedVariantId === v.id ? '#2563EB' : '#E2E8F0',
-                      background: selectedVariantId === v.id ? '#EFF6FF' : 'white',
-                      color: selectedVariantId === v.id ? '#1D4ED8' : '#475569',
-                    }}>
-                    {v.option_value}
-                    {v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
-                  </button>
-                ))}
+                {product.product_variants.map((v: any) => {
+                  const vDelivery = v.delivery_type ?? product.delivery_type
+                  const isSelected = selectedVariantId === v.id
+                  return (
+                    <button key={v.id} onClick={() => handleSelectVariant(v.id)}
+                      disabled={v.stock === 0}
+                      className="px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all disabled:opacity-40 relative"
+                      style={{
+                        borderColor: isSelected ? '#2563EB' : '#E2E8F0',
+                        background: isSelected ? '#EFF6FF' : 'white',
+                        color: isSelected ? '#1D4ED8' : '#475569',
+                      }}>
+                      <span>{v.option_value}</span>
+                      {/* Badge loại giao hàng */}
+                      <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{
+                          background: vDelivery === 'upgrade_owner' ? '#F5F3FF' : '#F0FDF4',
+                          color: vDelivery === 'upgrade_owner' ? '#7C3AED' : '#16A34A',
+                        }}>
+                        {vDelivery === 'upgrade_owner' ? '📧' : '📦'}
+                      </span>
+                      {v.stock === 0 && <span className="ml-1 text-red-400 text-xs">(hết)</span>}
+                    </button>
+                  )
+                })}
               </div>
+
+              {/* Mô tả loại biến thể đang chọn */}
+              {selectedVariant && (
+                <div className="mt-2 px-3 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5"
+                  style={{
+                    background: needsUpgradeEmail ? '#F5F3FF' : '#F0FDF4',
+                    color: needsUpgradeEmail ? '#7C3AED' : '#16A34A',
+                  }}>
+                  {needsUpgradeEmail
+                    ? '📧 Gói này yêu cầu nhập email nâng cấp chính chủ'
+                    : '📦 Gói này giao tài khoản cấp sẵn tự động'}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Upgrade email */}
+          {/* Upgrade email — chỉ hiện khi variant là upgrade_owner */}
           {needsUpgradeEmail && (
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">
-                📧 Email nâng cấp chính chủ
+            <div className="rounded-2xl border-2 p-4 space-y-2"
+              style={{ background: '#FAF5FF', borderColor: '#DDD6FE' }}>
+              <label className="block text-sm font-bold mb-1"
+                style={{ color: '#5B21B6' }}>
+                📧 Email nâng cấp chính chủ <span className="text-red-500">*</span>
               </label>
               <input type="email" value={upgradeEmail}
                 onChange={e => setUpgradeEmail(e.target.value)}
-                placeholder="Nhập email bạn muốn nâng cấp..."
-                className="input" />
-              <p className="text-xs text-slate-400 mt-1.5">
-                💡 Bỏ qua nếu bạn chọn gói cấp sẵn
+                placeholder="Nhập email Coursera / ChatGPT / Canva... của bạn"
+                className="input"
+                style={{ borderColor: upgradeEmail ? '#7C3AED' : undefined }} />
+              <p className="text-xs" style={{ color: '#7C3AED' }}>
+                💡 Nhập đúng email tài khoản bạn muốn shop nâng cấp lên gói premium
               </p>
+            </div>
+          )}
+
+          {/* Thông tin cấp sẵn */}
+          {isReadyAccount && (
+            <div className="rounded-xl px-4 py-3 text-xs font-semibold flex items-center gap-2"
+              style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
+              📦 Tài khoản sẽ được giao tự động ngay sau khi thanh toán được xác nhận
             </div>
           )}
 
@@ -256,12 +311,12 @@ export function ProductDetail({ product }: { product: Product & { product_review
           {/* CTA */}
           <div className="flex gap-3">
             <button onClick={handleBuyNow} disabled={isOutOfStock}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base text-white disabled:opacity-50 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base text-white disabled:opacity-50 transition-all active:scale-95"
               style={{ background: isOutOfStock ? '#94A3B8' : 'linear-gradient(135deg, #2563EB, #1d4ed8)', boxShadow: '0 4px 16px rgba(37,99,235,0.3)' }}>
               <Zap size={18} /> Mua Ngay
             </button>
             <button onClick={handleAddToCart} disabled={isOutOfStock}
-              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base border-2 disabled:opacity-50 transition-all hover:bg-blue-50"
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-base border-2 disabled:opacity-50 transition-all hover:bg-blue-50 active:scale-95"
               style={{ borderColor: '#2563EB', color: '#2563EB' }}>
               <ShoppingCart size={18} /> Thêm Vào Giỏ
             </button>
@@ -273,6 +328,13 @@ export function ProductDetail({ product }: { product: Product & { product_review
               Tổng: {formatPrice(price * quantity)}
             </div>
           )}
+
+          {/* Zalo support */}
+          <a href="https://zalo.me/0888993991" target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all hover:opacity-90"
+            style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
+            💬 Tư vấn qua Zalo trước khi mua
+          </a>
         </div>
       </div>
 

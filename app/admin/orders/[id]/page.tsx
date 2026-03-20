@@ -19,15 +19,17 @@ export default function AdminOrderDetailPage() {
   const [deliveries, setDeliveries] = useState<any[]>([])
   const [showPass, setShowPass] = useState<Record<number, boolean>>({})
 
-  useEffect(() => {
-    loadOrder()
-  }, [params.id])
+  useEffect(() => { loadOrder() }, [params.id])
 
   const loadOrder = async () => {
     const supabase = createClient()
     const { data } = await supabase
       .from('orders')
-      .select(`*, order_items(*, products(delivery_type, usage_guide_html)), order_deliveries(*)`)
+      .select(`
+        *,
+        order_items(*, products(delivery_type, usage_guide_html)),
+        order_deliveries(*)
+      `)
       .eq('id', params.id)
       .single()
     if (data) {
@@ -71,23 +73,75 @@ export default function AdminOrderDetailPage() {
     setDeliveries(prev => prev.filter((_, i) => i !== index))
   }
 
-  // Auto assign ready account from product pool
   const autoAssignReadyAccount = async () => {
     if (!order) return
     setAutoAssigning(true)
     const supabase = createClient()
-
     try {
       let assigned = 0
       for (const item of order.order_items ?? []) {
         const product = item.products
-        if (!['ready_account', 'both'].includes(product?.delivery_type)) continue
 
-        // Lấy acc available đầu tiên
+        // Xác định delivery_type thực tế của item (variant hoặc product)
+        const itemDeliveryType = item.variant_delivery_type ?? product?.delivery_type
+        if (!['ready_account', 'both'].includes(itemDeliveryType ?? '')) continue
+
+        // Check đã có delivery chưa (tránh giao 2 lần)
+        const existingDelivery = deliveries.find(d =>
+          d.id && (d.delivery_title?.includes(item.product_name) || deliveries.length === 1)
+        )
+        if (existingDelivery?.account_email) continue
+
+        // Query pool — ưu tiên theo variant_id nếu có
+        let query = supabase
+          .from('product_ready_accounts')
+          .select('*')
+          .eq('product_id', item.product_id)
+          .eq('status', 'available')
+          .order('created_at', { ascending: true })
+          .limit(1)
+
+        if (item.variant_id) {
+          // Thử lấy theo variant trước
+          const { data: variantAcc } = await supabase
+            .from('product_ready_accounts')
+            .select('*')
+            .eq('product_id', item.product_id)
+            .eq('variant_id', item.variant_id)
+            .eq('status', 'available')
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .single()
+
+          if (variantAcc) {
+            // Dùng acc của variant
+            await supabase
+              .from('product_ready_accounts')
+              .update({ status: 'assigned', order_id: order.id, assigned_at: new Date().toISOString() })
+              .eq('id', variantAcc.id)
+
+            const { data: newDelivery } = await supabase.from('order_deliveries').insert({
+              order_id: order.id,
+              delivery_title: `Tài khoản ${item.product_name}${item.variant_name ? ` - ${item.variant_name}` : ''}`,
+              account_email: variantAcc.email,
+              account_password: variantAcc.password,
+              account_extra: variantAcc.extra_info ?? '',
+              delivery_content_html: product?.usage_guide_html ?? '',
+              visible_to_customer: true,
+              delivered_at: new Date().toISOString(),
+            }).select().single()
+
+            if (newDelivery) assigned++
+            continue
+          }
+        }
+
+        // Fallback: lấy từ pool chung (không có variant_id)
         const { data: acc } = await supabase
           .from('product_ready_accounts')
           .select('*')
           .eq('product_id', item.product_id)
+          .is('variant_id', null)
           .eq('status', 'available')
           .order('created_at', { ascending: true })
           .limit(1)
@@ -98,17 +152,11 @@ export default function AdminOrderDetailPage() {
           continue
         }
 
-        // Mark assigned
         await supabase
           .from('product_ready_accounts')
-          .update({
-            status: 'assigned',
-            order_id: order.id,
-            assigned_at: new Date().toISOString(),
-          })
+          .update({ status: 'assigned', order_id: order.id, assigned_at: new Date().toISOString() })
           .eq('id', acc.id)
 
-        // Tạo delivery
         const { data: newDelivery } = await supabase.from('order_deliveries').insert({
           order_id: order.id,
           delivery_title: `Tài khoản ${item.product_name}`,
@@ -126,6 +174,8 @@ export default function AdminOrderDetailPage() {
       if (assigned > 0) {
         toast.success(`✅ Đã tự động giao ${assigned} tài khoản!`)
         loadOrder()
+      } else {
+        toast.error('Không có tài khoản nào được giao. Kiểm tra lại pool!')
       }
     } catch (err: any) {
       toast.error('Lỗi auto assign', { description: err.message })
@@ -175,9 +225,10 @@ export default function AdminOrderDetailPage() {
     }
   }
 
-  const hasReadyAccountProduct = order?.order_items?.some((item: any) =>
-    ['ready_account', 'both'].includes(item.products?.delivery_type)
-  )
+  const hasReadyAccountProduct = order?.order_items?.some((item: any) => {
+    const dt = item.variant_delivery_type ?? item.products?.delivery_type
+    return ['ready_account', 'both'].includes(dt)
+  })
 
   const hasDelivery = deliveries.some(d => d.account_email || d.delivery_content_html)
 
@@ -205,13 +256,13 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {hasReadyAccountProduct && !hasDelivery && (
+          {hasReadyAccountProduct && (
             <button onClick={autoAssignReadyAccount} disabled={autoAssigning}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white disabled:opacity-60 transition-all"
               style={{ background: 'linear-gradient(135deg, #16A34A, #059669)' }}>
-              {autoAssigning ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : <Zap size={15} />}
+              {autoAssigning
+                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <Zap size={15} />}
               Auto Giao Tài Khoản
             </button>
           )}
@@ -269,8 +320,7 @@ export default function AdminOrderDetailPage() {
               <div>
                 <p className="font-bold text-sm" style={{ color: '#166534' }}>Sản phẩm có tài khoản cấp sẵn</p>
                 <p className="text-xs mt-0.5" style={{ color: '#16A34A' }}>
-                  Bấm <strong>"Auto Giao Tài Khoản"</strong> để hệ thống tự lấy tài khoản từ pool và giao cho khách ngay.
-                  Hoặc nhập thủ công bên dưới.
+                  Bấm <strong>"Auto Giao Tài Khoản"</strong> để hệ thống tự lấy tài khoản từ pool (theo biến thể nếu có) và giao cho khách ngay.
                 </p>
               </div>
             </div>
@@ -348,7 +398,7 @@ export default function AdminOrderDetailPage() {
                     <textarea value={d.account_extra}
                       onChange={e => updateDelivery(i, 'account_extra', e.target.value)}
                       rows={2} className="input resize-none text-sm font-mono"
-                      placeholder="VD: acc clean, chưa đổi pass | link kích hoạt: https://..." />
+                      placeholder="VD: acc clean, chưa đổi pass | passMail: abc123 | link kích hoạt: https://..." />
                   </div>
 
                   <div>
@@ -381,6 +431,8 @@ export default function AdminOrderDetailPage() {
 
         {/* Right */}
         <div className="space-y-5">
+
+          {/* Customer info */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5">
             <h2 className="font-bold text-slate-900 mb-4">Thông Tin Khách</h2>
             <div className="space-y-2.5 text-sm">
@@ -405,25 +457,32 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
+          {/* Products */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5">
             <h2 className="font-bold text-slate-900 mb-4">Sản Phẩm</h2>
             <div className="space-y-3">
-              {order.order_items?.map((item: any) => (
-                <div key={item.id} className="p-3 rounded-xl border border-slate-100">
-                  <p className="font-semibold text-slate-900 text-xs leading-snug">{item.product_name}</p>
-                  {item.variant_name && <p className="text-xs text-slate-400 mt-0.5">{item.variant_name}</p>}
-                  {item.upgrade_email && (
-                    <p className="text-xs mt-0.5 font-mono" style={{ color: '#2563EB' }}>📧 {item.upgrade_email}</p>
-                  )}
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-slate-500">x{item.quantity} × {formatPrice(item.unit_price)}</p>
-                    {item.products?.delivery_type === 'ready_account' && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
-                        style={{ background: '#F0FDF4', color: '#16A34A' }}>📦 Cấp sẵn</span>
+              {order.order_items?.map((item: any) => {
+                const dt = item.variant_delivery_type ?? item.products?.delivery_type
+                return (
+                  <div key={item.id} className="p-3 rounded-xl border border-slate-100">
+                    <p className="font-semibold text-slate-900 text-xs leading-snug">{item.product_name}</p>
+                    {item.variant_name && <p className="text-xs text-slate-400 mt-0.5">{item.variant_name}</p>}
+                    {item.upgrade_email && (
+                      <p className="text-xs mt-0.5 font-mono" style={{ color: '#7C3AED' }}>📧 Nâng cấp: {item.upgrade_email}</p>
                     )}
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-xs text-slate-500">x{item.quantity} × {formatPrice(item.unit_price)}</p>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
+                        style={{
+                          background: dt === 'upgrade_owner' ? '#F5F3FF' : '#F0FDF4',
+                          color: dt === 'upgrade_owner' ? '#7C3AED' : '#16A34A',
+                        }}>
+                        {dt === 'upgrade_owner' ? '📧 Chính chủ' : '📦 Cấp sẵn'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between font-black text-slate-900">
               <span>Tổng</span>
@@ -431,11 +490,12 @@ export default function AdminOrderDetailPage() {
             </div>
           </div>
 
+          {/* Quick actions */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5">
             <h2 className="font-bold text-slate-900 mb-3">Thao Tác Nhanh</h2>
             <div className="space-y-2">
               <button
-                onClick={async () => {
+                onClick={() => {
                   setOrderStatus('completed')
                   setPaymentStatus('paid')
                   toast.info('Đã set hoàn thành — nhớ bấm Lưu!')
