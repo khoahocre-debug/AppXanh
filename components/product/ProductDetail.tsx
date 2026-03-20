@@ -280,14 +280,7 @@ export function ProductDetail({ product }: { product: Product & { product_review
             </div>
           )}
 
-          {/* Thông tin cấp sẵn */}
-          {isReadyAccount && (
-            <div className="rounded-xl px-4 py-3 text-xs font-semibold flex items-center gap-2"
-              style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
-              📦 Tài khoản sẽ được giao tự động ngay sau khi thanh toán được xác nhận
-            </div>
-          )}
-
+        
           {/* Quantity */}
           <div className="flex items-center gap-3">
             <p className="text-sm font-bold text-slate-700">Số lượng:</p>
@@ -329,12 +322,6 @@ export function ProductDetail({ product }: { product: Product & { product_review
             </div>
           )}
 
-          {/* Zalo support */}
-          <a href="https://zalo.me/0888993991" target="_blank" rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all hover:opacity-90"
-            style={{ background: '#F0FDF4', color: '#16A34A', border: '1px solid #BBF7D0' }}>
-            💬 Tư vấn qua Zalo trước khi mua
-          </a>
         </div>
       </div>
 
