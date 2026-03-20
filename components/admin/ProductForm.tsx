@@ -28,14 +28,16 @@ interface ProductImage {
   preview?: string
 }
 
-interface Review {
+interface ReviewRow {
   id: string
   reviewer_name: string
   reviewer_avatar: string | null
-  rating: number
+  rating: number | null
   content: string
   is_verified_purchase: boolean
   created_at: string
+  parent_id: string | null
+  status?: string
 }
 
 interface ReadyAccount {
@@ -54,6 +56,103 @@ interface Props {
   product?: any
 }
 
+// ── FakeQaForm với rollback nếu answer fail ──────────────
+function FakeQaForm({ productId, onDone }: { productId: string; onDone: () => void }) {
+  const [question, setQuestion] = useState({ name: '', content: '' })
+  const [answer, setAnswer] = useState({ name: 'XanhSoft', content: '' })
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!question.name.trim() || !question.content.trim()) {
+      toast.error('Vui lòng điền tên và câu hỏi')
+      return
+    }
+    setSaving(true)
+    const supabase = createClient()
+
+    // Insert câu hỏi
+    const { data: insertedQ, error: qErr } = await supabase
+      .from('product_reviews')
+      .insert({
+        product_id: productId,
+        reviewer_name: question.name.trim(),
+        rating: null,
+        content: question.content.trim(),
+        status: 'approved',
+        is_verified_purchase: false,
+        parent_id: null,
+        likes_count: 0,
+      })
+      .select()
+      .single()
+
+    if (qErr || !insertedQ) {
+      toast.error('Lỗi khi tạo câu hỏi', { description: qErr?.message })
+      setSaving(false)
+      return
+    }
+
+    // Insert câu trả lời nếu có
+    if (answer.content.trim()) {
+      const { error: aErr } = await supabase.from('product_reviews').insert({
+        product_id: productId,
+        reviewer_name: answer.name.trim() || 'XanhSoft',
+        rating: null,
+        content: answer.content.trim(),
+        status: 'approved',
+        is_verified_purchase: false,
+        parent_id: insertedQ.id,
+        likes_count: 0,
+      })
+
+      if (aErr) {
+        // Rollback: xóa câu hỏi vừa tạo
+        await supabase.from('product_reviews').delete().eq('id', insertedQ.id)
+        toast.error('Lỗi khi tạo câu trả lời — đã rollback câu hỏi', { description: aErr.message })
+        setSaving(false)
+        return
+      }
+    }
+
+    toast.success('Đã thêm hỏi đáp!')
+    setQuestion({ name: '', content: '' })
+    setAnswer({ name: 'XanhSoft', content: '' })
+    onDone()
+    setSaving(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border p-4 space-y-3" style={{ background: '#F5F3FF', borderColor: '#DDD6FE' }}>
+        <p className="text-xs font-bold" style={{ color: '#7C3AED' }}>❓ Câu hỏi</p>
+        <input value={question.name} onChange={e => setQuestion(v => ({ ...v, name: e.target.value }))}
+          placeholder="Tên người hỏi" className="input text-sm" />
+        <textarea value={question.content} onChange={e => setQuestion(v => ({ ...v, content: e.target.value }))}
+          rows={3} className="input resize-none text-sm"
+          placeholder="VD: Tài khoản này dùng được mấy thiết bị?" />
+      </div>
+
+      <div className="rounded-xl border p-4 space-y-3" style={{ background: '#F0FDF4', borderColor: '#BBF7D0' }}>
+        <p className="text-xs font-bold" style={{ color: '#16A34A' }}>↩️ Trả lời (không bắt buộc)</p>
+        <input value={answer.name} onChange={e => setAnswer(v => ({ ...v, name: e.target.value }))}
+          placeholder="Tên người trả lời" className="input text-sm" />
+        <textarea value={answer.content} onChange={e => setAnswer(v => ({ ...v, content: e.target.value }))}
+          rows={3} className="input resize-none text-sm"
+          placeholder="VD: Tài khoản dùng được 1 thiết bị, bảo hành đăng nhập lần đầu..." />
+      </div>
+
+      <button onClick={handleSave} disabled={saving || !question.name.trim() || !question.content.trim()}
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
+        style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }}>
+        {saving
+          ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          : '💬'} Thêm Hỏi Đáp
+      </button>
+    </div>
+  )
+}
+
+// ── VariantAccountsManager ───────────────────────────────
 function VariantAccountsManager({ variantId, productId }: { variantId: string; productId?: string }) {
   const [accounts, setAccounts] = useState<any[]>([])
   const [bulkText, setBulkText] = useState('')
@@ -140,13 +239,9 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
       <p className="text-xs text-slate-500 mb-2">
         Format: <code className="bg-white px-1.5 py-0.5 rounded font-mono text-xs">email|password|thông tin thêm</code>
       </p>
-      <textarea
-        value={bulkText}
-        onChange={e => setBulkText(e.target.value)}
-        rows={3}
+      <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={3}
         className="input font-mono text-xs resize-none mb-2"
-        placeholder={'brake1@gmail.com|pass123|acc clean\nbrake2@gmail.com|pass456|team US'}
-      />
+        placeholder={'brake1@gmail.com|pass123|acc clean\nbrake2@gmail.com|pass456|team US'} />
       <div className="flex justify-between items-center">
         <p className="text-xs text-slate-400">
           {bulkText.trim() ? bulkText.trim().split('\n').filter(l => l.includes('|')).length + ' dòng hợp lệ' : ''}
@@ -210,6 +305,7 @@ function VariantAccountsManager({ variantId, productId }: { variantId: string; p
   )
 }
 
+// ── Main ProductForm ─────────────────────────────────────
 export function ProductForm({ categories, product }: Props) {
   const isEdit = !!product
   const coverInputRef = useRef<HTMLInputElement>(null)
@@ -269,15 +365,8 @@ export function ProductForm({ categories, product }: Props) {
     })) ?? []
   )
 
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [reviewsLoaded, setReviewsLoaded] = useState(false)
-  const [newReview, setNewReview] = useState({
-    reviewer_name: '',
-    rating: 5,
-    content: '',
-    reviewer_avatar: '',
-    is_verified_purchase: false,
-  })
+  const [reviews, setReviews] = useState<ReviewRow[]>([])
+  const [newReview, setNewReview] = useState({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '' })
   const [savingReview, setSavingReview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'content' | 'variants' | 'accounts' | 'reviews'>('basic')
@@ -291,6 +380,7 @@ export function ProductForm({ categories, product }: Props) {
   useEffect(() => {
     if (!product?.id) return
     if (activeTab === 'accounts') loadAccounts()
+    if (activeTab === 'reviews') loadReviews()
   }, [activeTab, product?.id])
 
   const loadAccounts = async () => {
@@ -305,6 +395,19 @@ export function ProductForm({ categories, product }: Props) {
       .order('created_at', { ascending: true })
     setAccounts((data ?? []) as ReadyAccount[])
     setAccLoading(false)
+  }
+
+  // loadReviews không có guard — luôn fetch lại khi gọi
+  const loadReviews = async () => {
+    if (!product?.id) return
+    const supabase = createClient()
+    const { data, error } = await supabase.from('product_reviews').select('*')
+      .eq('product_id', product.id).order('created_at', { ascending: true })
+    if (error) {
+      toast.error('Lỗi tải đánh giá', { description: error.message })
+      return
+    }
+    setReviews(data ?? [])
   }
 
   const handleSaveAccounts = async () => {
@@ -393,42 +496,46 @@ export function ProductForm({ categories, product }: Props) {
     }
   }
 
-  const loadReviews = async () => {
-    if (!product?.id || reviewsLoaded) return
-    const supabase = createClient()
-    const { data } = await supabase.from('product_reviews').select('*')
-      .eq('product_id', product.id).order('created_at', { ascending: false })
-    setReviews(data ?? [])
-    setReviewsLoaded(true)
-  }
-
+  // handleAddReview với error handling đầy đủ
   const handleAddReview = async () => {
     if (!newReview.reviewer_name || !newReview.content) { toast.error('Vui lòng điền tên và nội dung'); return }
     setSavingReview(true)
     const supabase = createClient()
-    const { data } = await supabase.from('product_reviews').insert({
+    const { data, error } = await supabase.from('product_reviews').insert({
       product_id: product.id,
       reviewer_name: newReview.reviewer_name,
       rating: newReview.rating,
       content: newReview.content,
       reviewer_avatar: newReview.reviewer_avatar || null,
       status: 'approved',
-      is_verified_purchase: newReview.is_verified_purchase,
+      is_verified_purchase: true,
+      parent_id: null,
+      likes_count: 0,
     }).select().single()
-    if (data) {
-      setReviews(prev => [data, ...prev])
-      setNewReview({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '', is_verified_purchase: false })
+    if (error) {
+      toast.error('Lỗi khi thêm đánh giá', { description: error.message })
+    } else if (data) {
+      setNewReview({ reviewer_name: '', rating: 5, content: '', reviewer_avatar: '' })
       toast.success('Đã thêm đánh giá!')
+      loadReviews()
     }
     setSavingReview(false)
   }
 
+  // handleDeleteReview xóa cascade reply con bằng 1 query
   const handleDeleteReview = async (id: string) => {
-    if (!confirm('Xóa đánh giá này?')) return
+    if (!confirm('Xóa mục này? Reply con cũng sẽ bị xóa.')) return
     const supabase = createClient()
-    await supabase.from('product_reviews').delete().eq('id', id)
-    setReviews(prev => prev.filter(r => r.id !== id))
-    toast.success('Đã xóa!')
+    // Tìm tất cả reply con
+    const childIds = reviews.filter(r => r.parent_id === id).map(r => r.id)
+    const allIds = [id, ...childIds]
+    const { error } = await supabase.from('product_reviews').delete().in('id', allIds)
+    if (error) {
+      toast.error('Lỗi khi xóa', { description: error.message })
+    } else {
+      setReviews(prev => prev.filter(r => !allIds.includes(r.id)))
+      toast.success('Đã xóa!')
+    }
   }
 
   const handleSave = async () => {
@@ -542,13 +649,22 @@ export function ProductForm({ categories, product }: Props) {
   const availableCount = accounts.filter(a => a.status === 'available').length
   const assignedCount = accounts.filter(a => a.status === 'assigned').length
 
+  // Tách review entries và Q&A entries để render threaded
+  const reviewEntries = reviews.filter(r => r.rating && r.rating > 0 && !r.parent_id)
+  const qaRoots = reviews.filter(r => (!r.rating || r.rating === 0) && !r.parent_id)
+  const qaRepliesByParent: Record<string, ReviewRow[]> = {}
+  reviews.filter(r => r.parent_id).forEach(r => {
+    if (!qaRepliesByParent[r.parent_id!]) qaRepliesByParent[r.parent_id!] = []
+    qaRepliesByParent[r.parent_id!].push(r)
+  })
+
   const TABS = [
     { id: 'basic', label: '📋 Thông Tin' },
     { id: 'images', label: '🖼️ Hình Ảnh (' + ((coverImage ? 1 : 0) + extraImages.length) + ')' },
     { id: 'content', label: '📝 Nội Dung' },
     { id: 'variants', label: '🔧 Biến Thể (' + variants.length + ')' },
     { id: 'accounts', label: '🔐 Tài Khoản Cấp Sẵn' + (accounts.length > 0 ? ' (' + availableCount + ' còn)' : '') },
-    { id: 'reviews', label: '⭐ Đánh Giá (' + reviews.length + ')' },
+    { id: 'reviews', label: '⭐ Đánh Giá & Hỏi Đáp (' + reviews.length + ')' },
   ]
 
   return (
@@ -583,10 +699,7 @@ export function ProductForm({ categories, product }: Props) {
       <div className="flex border-b border-slate-200 mb-6 gap-1 overflow-x-auto">
         {TABS.map(tab => (
           <button key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id as any)
-              if (tab.id === 'reviews') loadReviews()
-            }}
+            onClick={() => setActiveTab(tab.id as any)}
             className="flex-shrink-0 px-5 py-3 text-sm font-semibold border-b-2 transition-all whitespace-nowrap"
             style={{
               borderColor: activeTab === tab.id ? '#2563EB' : 'transparent',
@@ -784,7 +897,7 @@ export function ProductForm({ categories, product }: Props) {
         <div className="space-y-5">
           {[
             { key: 'description_html', label: '📋 Mô Tả Chi Tiết (HTML)', placeholder: '<h2>Tiêu đề</h2><p>Nội dung...</p>', rows: 12 },
-            { key: 'usage_guide_html', label: '📖 Hướng Dẫn Sử Dụng (HTML) — Dùng chung cho tất cả khách', placeholder: '<ol><li>Bước 1...</li></ol>', rows: 10 },
+            { key: 'usage_guide_html', label: '📖 Hướng Dẫn Sử Dụng (HTML)', placeholder: '<ol><li>Bước 1...</li></ol>', rows: 10 },
             { key: 'warranty_html', label: '🛡️ Chính Sách Bảo Hành (HTML)', placeholder: '<ul><li>Bảo hành đăng nhập lần đầu</li></ul>', rows: 8 },
             { key: 'faq_html', label: '❓ FAQ (HTML)', placeholder: '<p><strong>Q: Câu hỏi?</strong></p>', rows: 8 },
           ].map(({ key, label, placeholder, rows }) => (
@@ -813,7 +926,7 @@ export function ProductForm({ categories, product }: Props) {
           <div className="rounded-2xl p-4 border" style={{ background: '#EFF6FF', borderColor: '#BFDBFE' }}>
             <p className="text-sm font-bold mb-1" style={{ color: '#1E40AF' }}>💡 Mỗi biến thể có thể set loại giao hàng riêng</p>
             <p className="text-xs" style={{ color: '#3B82F6' }}>
-              Biến thể <strong>Cấp sẵn</strong> → pool tài khoản riêng cho biến thể đó.
+              Biến thể <strong>Cấp sẵn</strong> → pool tài khoản riêng.
               Biến thể <strong>Nâng cấp chính chủ</strong> → khách phải nhập email khi mua.
             </p>
           </div>
@@ -967,7 +1080,6 @@ export function ProductForm({ categories, product }: Props) {
                 <p className="text-sm font-bold mb-1" style={{ color: '#D97706' }}>💡 Tab này là pool chung (không theo biến thể)</p>
                 <p className="text-xs" style={{ color: '#D97706' }}>
                   Nếu sản phẩm có biến thể, hãy thêm tài khoản trong từng biến thể ở tab <strong>Biến Thể</strong>.
-                  Pool này dành cho sản phẩm không có biến thể.
                 </p>
               </div>
 
@@ -992,13 +1104,9 @@ export function ProductForm({ categories, product }: Props) {
                   Mỗi dòng 1 tài khoản · Format:{' '}
                   <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono">email|mật_khẩu|thông_tin_thêm</code>
                 </p>
-                <textarea
-                  value={bulkText}
-                  onChange={e => setBulkText(e.target.value)}
-                  rows={6}
+                <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={6}
                   className="input font-mono text-sm resize-none"
-                  placeholder={'brake1@gmail.com|matkhau123|acc clean\nbrake2@gmail.com|matkhau456|team US'}
-                />
+                  placeholder={'brake1@gmail.com|matkhau123|acc clean\nbrake2@gmail.com|matkhau456|team US'} />
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-xs text-slate-400">
                     {bulkText.trim()
@@ -1087,7 +1195,7 @@ export function ProductForm({ categories, product }: Props) {
         </div>
       )}
 
-      {/* ── Tab 6: Reviews ── */}
+      {/* ── Tab 6: Đánh Giá & Hỏi Đáp ── */}
       {activeTab === 'reviews' && (
         <div className="space-y-5">
           {!product?.id ? (
@@ -1097,8 +1205,9 @@ export function ProductForm({ categories, product }: Props) {
             </div>
           ) : (
             <>
+              {/* Form thêm đánh giá */}
               <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h2 className="font-bold text-slate-900 mb-4">➕ Thêm Đánh Giá</h2>
+                <h2 className="font-bold text-slate-900 mb-4">⭐ Thêm Đánh Giá</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -1125,13 +1234,10 @@ export function ProductForm({ categories, product }: Props) {
                       rows={3} className="input resize-none text-sm"
                       placeholder="Sản phẩm rất tốt, giao hàng nhanh..." />
                   </div>
-                  <label className="flex items-center gap-2.5 cursor-pointer">
-                    <input type="checkbox"
-                      checked={newReview.is_verified_purchase}
-                      onChange={e => setNewReview(r => ({ ...r, is_verified_purchase: e.target.checked }))}
-                      className="w-4 h-4 rounded" style={{ accentColor: '#16A34A' }} />
-                    <span className="text-sm font-medium text-slate-700">✅ Khách Đã Mua Sản Phẩm</span>
-                  </label>
+                  <div className="p-3 rounded-xl text-xs font-semibold flex items-center gap-2"
+                    style={{ background: '#DCFCE7', color: '#166534' }}>
+                    ✅ Đánh giá admin tạo sẽ tự động có tick "Đã mua sản phẩm"
+                  </div>
                   <button onClick={handleAddReview} disabled={savingReview}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
                     style={{ background: '#2563EB' }}>
@@ -1142,40 +1248,121 @@ export function ProductForm({ categories, product }: Props) {
                 </div>
               </div>
 
+              {/* Form thêm hỏi đáp ảo */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6">
+                <h2 className="font-bold text-slate-900 mb-1">💬 Thêm Hỏi & Đáp</h2>
+                <p className="text-xs text-slate-400 mb-4">Tạo câu hỏi + trả lời ảo hiển thị trong phần Hỏi Đáp ngoài trang sản phẩm</p>
+                <FakeQaForm productId={product.id} onDone={loadReviews} />
+              </div>
+
+              {/* Danh sách Đánh Giá — threaded */}
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100">
-                  <h2 className="font-bold text-slate-900">Danh sách đánh giá ({reviews.length})</h2>
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <h2 className="font-bold text-slate-900">
+                    Đánh Giá ({reviewEntries.length}) · Hỏi Đáp ({qaRoots.length} câu hỏi)
+                  </h2>
+                  <button onClick={loadReviews}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                    style={{ color: '#2563EB' }}>
+                    🔄 Refresh
+                  </button>
                 </div>
+
                 {reviews.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400">Chưa có đánh giá nào</div>
+                  <div className="text-center py-10 text-slate-400">Chưa có đánh giá hoặc hỏi đáp nào</div>
                 ) : (
                   <div className="divide-y divide-slate-100">
-                    {reviews.map(review => (
-                      <div key={review.id} className="p-4 flex items-start gap-3 hover:bg-slate-50">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
-                          {review.reviewer_name.charAt(0).toUpperCase()}
+
+                    {/* Đánh giá */}
+                    {reviewEntries.length > 0 && (
+                      <div>
+                        <div className="px-6 py-2 text-xs font-bold uppercase tracking-wider"
+                          style={{ background: '#F8FAFC', color: '#2563EB' }}>
+                          ⭐ Đánh Giá ({reviewEntries.length})
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <p className="font-semibold text-sm text-slate-900">{review.reviewer_name}</p>
-                            {review.is_verified_purchase && (
-                              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                                style={{ background: '#DCFCE7', color: '#16A34A' }}>
-                                ✅ Đã mua
-                              </span>
-                            )}
-                            <span className="text-xs">{'⭐'.repeat(review.rating)}</span>
+                        {reviewEntries.map(review => (
+                          <div key={review.id} className="p-4 flex items-start gap-3 hover:bg-slate-50 border-t border-slate-100">
+                            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                              style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
+                              {review.reviewer_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="font-semibold text-sm text-slate-900">{review.reviewer_name}</p>
+                                {review.is_verified_purchase && (
+                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                    style={{ background: '#DCFCE7', color: '#16A34A' }}>✅ Đã mua</span>
+                                )}
+                                {review.rating && <span className="text-xs">{'⭐'.repeat(review.rating)}</span>}
+                              </div>
+                              <p className="text-sm text-slate-600">{review.content}</p>
+                              <p className="text-xs text-slate-400 mt-1">{new Date(review.created_at).toLocaleDateString('vi-VN')}</p>
+                            </div>
+                            <button onClick={() => handleDeleteReview(review.id)}
+                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
+                              <Trash2 size={14} />
+                            </button>
                           </div>
-                          <p className="text-sm text-slate-600">{review.content}</p>
-                          <p className="text-xs text-slate-400 mt-1">{new Date(review.created_at).toLocaleDateString('vi-VN')}</p>
-                        </div>
-                        <button onClick={() => handleDeleteReview(review.id)}
-                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
-                          <Trash2 size={14} />
-                        </button>
+                        ))}
                       </div>
-                    ))}
+                    )}
+
+                    {/* Hỏi Đáp — threaded */}
+                    {qaRoots.length > 0 && (
+                      <div>
+                        <div className="px-6 py-2 text-xs font-bold uppercase tracking-wider"
+                          style={{ background: '#F8FAFC', color: '#7C3AED' }}>
+                          💬 Hỏi & Đáp ({qaRoots.length} câu hỏi)
+                        </div>
+                        {qaRoots.map(qa => (
+                          <div key={qa.id} className="border-t border-slate-100">
+                            {/* Câu hỏi */}
+                            <div className="p-4 flex items-start gap-3 hover:bg-slate-50">
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                style={{ background: 'linear-gradient(135deg, #7C3AED, #A855F7)' }}>
+                                {qa.reviewer_name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <p className="font-semibold text-sm text-slate-900">{qa.reviewer_name}</p>
+                                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                                    style={{ background: '#F5F3FF', color: '#7C3AED' }}>❓ Hỏi</span>
+                                </div>
+                                <p className="text-sm text-slate-600">{qa.content}</p>
+                                <p className="text-xs text-slate-400 mt-1">{new Date(qa.created_at).toLocaleDateString('vi-VN')}</p>
+                              </div>
+                              <button onClick={() => handleDeleteReview(qa.id)}
+                                className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+
+                            {/* Replies của câu hỏi này */}
+                            {(qaRepliesByParent[qa.id] ?? []).map(reply => (
+                              <div key={reply.id} className="pl-14 pr-4 py-3 flex items-start gap-3 hover:bg-slate-50"
+                                style={{ background: '#F8FAFC', borderTop: '1px solid #F1F5F9' }}>
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                                  style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>
+                                  {reply.reviewer_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <p className="font-semibold text-xs text-slate-900">{reply.reviewer_name}</p>
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                                      style={{ background: '#EFF6FF', color: '#2563EB' }}>↩️ Trả lời</span>
+                                  </div>
+                                  <p className="text-sm text-slate-600">{reply.content}</p>
+                                </div>
+                                <button onClick={() => handleDeleteReview(reply.id)}
+                                  className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors flex-shrink-0">
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

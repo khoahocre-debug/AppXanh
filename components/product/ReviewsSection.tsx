@@ -516,7 +516,7 @@ export function ReviewsSection({ productId, productName }: Props) {
             </div>
           </form>
           <div className="mt-4 p-3 rounded-xl text-xs" style={{ background: '#F8FAFC', color: '#64748B' }}>
-            💬 Câu hỏi sẽ được duyệt trước khi hiển thị. Thường trong vòng vài giờ.
+            💬 Câu hỏi sẽ được hiển thị sớm tại đây.
           </div>
         </div>
       </div>
