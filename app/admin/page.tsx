@@ -45,7 +45,7 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>
           Dashboard
         </h1>
-        <p className="text-slate-500 text-sm mt-1">Tổng quan hoạt động App Xanh</p>
+        <p className="text-slate-500 text-sm mt-1">Tổng quan hoạt động XanhSoft</p>
       </div>
 
       {/* Stats */}

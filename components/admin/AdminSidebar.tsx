@@ -38,7 +38,7 @@ export function AdminSidebar() {
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-black text-sm"
             style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>A</div>
           <div>
-            <p className="font-black text-slate-900 text-sm" style={{ fontFamily: 'Sora, sans-serif' }}>App Xanh</p>
+            <p className="font-black text-slate-900 text-sm" style={{ fontFamily: 'Sora, sans-serif' }}>XanhSoft</p>
             <p className="text-xs font-semibold" style={{ color: '#2563EB' }}>Admin Panel</p>
           </div>
         </Link>

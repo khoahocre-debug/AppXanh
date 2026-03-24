@@ -32,7 +32,7 @@ export default async function OrdersPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center">
           <ShoppingBag size={48} className="mx-auto mb-4" style={{ color: '#CBD5E1' }} />
           <p className="text-lg font-bold text-slate-700 mb-1">Bạn chưa có đơn hàng nào</p>
-          <p className="text-slate-400 text-sm mb-6">Khám phá các sản phẩm premium tại App Xanh!</p>
+          <p className="text-slate-400 text-sm mb-6">Khám phá các sản phẩm premium tại XanhSoft!</p>
           <Link href="/shop" className="btn-primary">Xem Sản Phẩm</Link>
         </div>
       ) : (

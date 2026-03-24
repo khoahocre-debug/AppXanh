@@ -62,7 +62,7 @@ fetch('/api/send-welcome', {
           <Link href="/" className="inline-flex items-center justify-center gap-2.5 mb-4">
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg"
               style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>A</div>
-            <span className="text-2xl font-black gradient-text" style={{ fontFamily: 'Sora, sans-serif' }}>App Xanh</span>
+            <span className="text-2xl font-black gradient-text" style={{ fontFamily: 'Sora, sans-serif' }}>XanhSoft</span>
           </Link>
           <h1 className="text-2xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>Tạo Tài Khoản</h1>
           <p className="text-slate-500 text-sm mt-1">Miễn phí, đăng ký trong 30 giây</p>

@@ -33,7 +33,7 @@ export function OrderDeliverySection({ deliveries, orderItems }: Props) {
 
   const downloadOrder = (delivery: OrderDelivery, orderItem?: OrderItem) => {
     const lines = []
-    lines.push(`APP XANH — THÔNG TIN TÀI KHOẢN`)
+    lines.push(`XANHSOFT — THÔNG TIN TÀI KHOẢN`)
     lines.push(`================================`)
     lines.push(`Sản phẩm: ${orderItem?.product_name || delivery.delivery_title || 'N/A'}`)
     lines.push(``)

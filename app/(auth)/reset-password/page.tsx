@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
           <Link href="/" className="inline-flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-lg"
               style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)' }}>A</div>
-            <span className="font-black text-xl text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>App Xanh</span>
+            <span className="font-black text-xl text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>XanhSoft</span>
           </Link>
         </div>
 
