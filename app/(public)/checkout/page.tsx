@@ -186,7 +186,7 @@ function CheckoutContent() {
             price: item.variant?.price ?? item.product.price,
           })),
         }),
-       }).catch(err => console.error('Email send failed:', err))
+      }).catch(err => console.error('Email send failed:', err))
 
       // Gửi notify admin — new order
       fetch('/api/send-admin-notify', {
