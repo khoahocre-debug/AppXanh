@@ -21,6 +21,8 @@ interface Order {
   order_status: string | null
   payment_status: string | null
   total: number | null
+  customer_name: string | null
+  customer_email: string | null
 }
 type PaymentStatus = 'pending' | 'confirming' | 'paid'
 type TransferField = { label: string; value: string; copyValue?: string; highlight?: boolean }
@@ -72,7 +74,7 @@ function PaymentContent() {
     const load = async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_code, note, order_status, payment_status, total')
+        .select('id, order_code, note, order_status, payment_status, total, customer_name, customer_email')
         .eq('order_code', orderCode)
         .single()
 
@@ -152,6 +154,19 @@ function PaymentContent() {
     }
 
     window.sessionStorage.setItem(CONFIRMING_KEY + orderCode, 'true')
+    // Notify admin khi khách xác nhận đã CK
+    fetch('/api/send-admin-notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'new_order',
+        orderCode,
+        customerName: order?.customer_name ?? '',
+        customerEmail: order?.customer_email ?? '',
+        total: amount,
+        items: [],
+      }),
+    }).catch(err => console.error('Admin notify failed:', err))
     setOrder(prev => prev ? {
       ...prev,
       order_status: 'processing',
