@@ -24,6 +24,7 @@ interface Order {
   customer_name: string | null
   customer_email: string | null
 }
+
 type PaymentStatus = 'pending' | 'confirming' | 'paid'
 type TransferField = { label: string; value: string; copyValue?: string; highlight?: boolean }
 
@@ -40,7 +41,8 @@ function SuccessIcon({ size = 40 }: { size?: number }) {
       </defs>
       <circle cx="32" cy="32" r="26" fill="url(#sg-ring)" />
       <circle cx="32" cy="32" r="20" fill="rgba(255,255,255,0.18)" />
-      <path d="M22 32.5L28.8 39.3L42.5 25.5" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M22 32.5L28.8 39.3L42.5 25.5"
+        stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -58,6 +60,8 @@ function PaymentContent() {
   const [polling, setPolling] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  // Guard chống gửi email 2 lần khi polling fire nhiều lần
+  const [completedEmailSent, setCompletedEmailSent] = useState(false)
 
   const amount = (order?.total && order.total > 0) ? order.total : amountParam
   const content = `APPXANH ${orderCode}`
@@ -67,6 +71,7 @@ function PaymentContent() {
     [amount, content]
   )
 
+  // Load order + restore confirming state
   useEffect(() => {
     let active = true
     const supabase = createClient()
@@ -104,6 +109,7 @@ function PaymentContent() {
     return () => { active = false }
   }, [orderCode])
 
+  // Poll mỗi 5s khi confirming
   useEffect(() => {
     if (!polling) return
     const supabase = createClient()
@@ -116,14 +122,52 @@ function PaymentContent() {
         .single()
 
       if (error || !data) return
-      setOrder(prev => (prev ? { ...prev, ...data } : prev))
+
+      // Merge total mới nhất vào order state
+      setOrder(prev => prev ? { ...prev, ...data } : prev)
 
       if (data.payment_status === 'paid') {
+        window.clearInterval(interval)
         window.sessionStorage.removeItem(CONFIRMING_KEY + orderCode)
         setPaymentStatus('paid')
         setPolling(false)
         setRedirecting(true)
         toast.success('Thanh toán đã được xác nhận! 🎉')
+
+        // Chỉ gửi email 1 lần duy nhất
+        if (!completedEmailSent) {
+          setCompletedEmailSent(true)
+
+          const finalTotal = data.total ?? amount
+
+          // Email hoàn thành cho khách
+          fetch('/api/send-order-completed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: order?.customer_email ?? '',
+              customerName: order?.customer_name ?? 'Khách hàng',
+              orderCode,
+              items: [],
+              total: finalTotal,
+            }),
+          }).catch(err => console.error('Completed email failed:', err))
+
+          // Notify admin đơn hoàn thành
+          fetch('/api/send-admin-notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'order_completed',
+              orderCode,
+              customerName: order?.customer_name ?? '',
+              customerEmail: order?.customer_email ?? '',
+              total: finalTotal,
+              items: [],
+            }),
+          }).catch(err => console.error('Admin notify failed:', err))
+        }
+
         window.setTimeout(() => {
           router.replace(`/account/orders/${orderCode}`)
           router.refresh()
@@ -132,8 +176,9 @@ function PaymentContent() {
     }, 5000)
 
     return () => window.clearInterval(interval)
-  }, [polling, orderCode, router])
+  }, [polling, orderCode, router, completedEmailSent, order, amount])
 
+  // Khách bấm "Tôi đã chuyển khoản"
   const handleConfirm = async () => {
     if (submitting || paymentStatus !== 'pending') return
     setSubmitting(true)
@@ -154,7 +199,8 @@ function PaymentContent() {
     }
 
     window.sessionStorage.setItem(CONFIRMING_KEY + orderCode, 'true')
-    // Notify admin khi khách xác nhận đã CK
+
+    // Notify admin khách đã CK — dùng type riêng để admin biết cần kiểm tra
     fetch('/api/send-admin-notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -167,6 +213,7 @@ function PaymentContent() {
         items: [],
       }),
     }).catch(err => console.error('Admin notify failed:', err))
+
     setOrder(prev => prev ? {
       ...prev,
       order_status: 'processing',
@@ -195,123 +242,123 @@ function PaymentContent() {
     { label: 'Nội dung chuyển khoản ⚠️', value: content, copyValue: content, highlight: true },
   ]
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-          <span className="text-sm font-semibold text-slate-600">Đang tải thông tin thanh toán...</span>
-        </div>
+  // ── Loading ──
+  if (loading) return (
+    <div className="flex min-h-[60vh] items-center justify-center px-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+        <span className="text-sm font-semibold text-slate-600">Đang tải thông tin thanh toán...</span>
       </div>
-    )
-  }
+    </div>
+  )
 
-  if (!order) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-rose-50">
-          <CircleAlert className="h-10 w-10 text-rose-500" />
+  // ── Not found ──
+  if (!order) return (
+    <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-rose-50">
+        <CircleAlert className="h-10 w-10 text-rose-500" />
+      </div>
+      <h1 className="mb-2 text-2xl font-black text-slate-900">Không tìm thấy đơn hàng</h1>
+      <p className="mb-6 text-sm text-slate-500">
+        Vui lòng kiểm tra lại liên kết thanh toán hoặc xem danh sách đơn hàng.
+      </p>
+      <Link href="/account/orders" className="btn-primary justify-center py-3">
+        <Package size={18} /> Xem danh sách đơn hàng
+      </Link>
+    </div>
+  )
+
+  // ── Paid ──
+  if (paymentStatus === 'paid') return (
+    <div className="mx-auto max-w-xl px-4 py-16 text-center">
+      <div className="relative overflow-hidden rounded-[32px] border border-emerald-100 px-6 py-10 shadow-[0_24px_70px_rgba(16,185,129,0.12)]"
+        style={{ background: 'linear-gradient(180deg,#ffffff 0%,#f0fdf4 100%)' }}>
+        <div className="absolute inset-x-10 top-0 h-24 rounded-full bg-emerald-200/40 blur-3xl" />
+        <div className="relative mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-[28px] bg-white shadow-[0_20px_40px_rgba(22,163,74,0.18)]">
+          <SuccessIcon size={48} />
         </div>
-        <h1 className="mb-2 text-2xl font-black text-slate-900">Không tìm thấy đơn hàng</h1>
-        <p className="mb-6 text-sm text-slate-500">
-          Vui lòng kiểm tra lại liên kết thanh toán hoặc xem danh sách đơn hàng.
+        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest"
+          style={{ background: '#DCFCE7', color: '#16A34A' }}>
+          <BadgeCheck size={14} /> Đã xác nhận thanh toán
+        </div>
+        <h1 className="mb-2 text-3xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>
+          Giao dịch thành công
+        </h1>
+        <p className="mx-auto mb-8 max-w-md text-sm leading-6 text-slate-600">
+          XanhSoft đã ghi nhận thanh toán cho đơn{' '}
+          <span className="font-semibold text-slate-900">#{orderCode}</span>.
+          Đang chuyển bạn đến chi tiết đơn hàng...
         </p>
-        <Link href="/account/orders" className="btn-primary justify-center py-3">
-          <Package size={18} /> Xem danh sách đơn hàng
+        <div className="mx-auto mb-6 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white">
+          <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+        </div>
+        <Link href={`/account/orders/${orderCode}`} className="btn-primary justify-center px-5 py-3.5">
+          <Package size={18} /> Xem đơn hàng ngay
         </Link>
       </div>
-    )
-  }
+    </div>
+  )
 
-  if (paymentStatus === 'paid') {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <div className="relative overflow-hidden rounded-[32px] border border-emerald-100 px-6 py-10 shadow-[0_24px_70px_rgba(16,185,129,0.12)]"
-          style={{ background: 'linear-gradient(180deg,#ffffff 0%,#f0fdf4 100%)' }}>
-          <div className="absolute inset-x-10 top-0 h-24 rounded-full bg-emerald-200/40 blur-3xl" />
-          <div className="relative mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-[28px] bg-white shadow-[0_20px_40px_rgba(22,163,74,0.18)]">
-            <SuccessIcon size={48} />
+  // ── Confirming ──
+  if (paymentStatus === 'confirming') return (
+    <div className="mx-auto max-w-xl px-4 py-14">
+      <div className="overflow-hidden rounded-[32px] border border-blue-100 shadow-[0_22px_60px_rgba(37,99,235,0.12)]"
+        style={{ background: 'linear-gradient(180deg,#ffffff 0%,#eff6ff 100%)' }}>
+        <div className="border-b border-white/70 px-6 py-5 sm:px-8">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700 backdrop-blur">
+            <ShieldCheck size={14} /> Đang chờ đối soát
           </div>
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest"
-            style={{ background: '#DCFCE7', color: '#16A34A' }}>
-            <BadgeCheck size={14} /> Đã xác nhận thanh toán
+          <div className="flex items-start gap-4">
+            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>
+                Đang xác nhận thanh toán
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Hệ thống đã ghi nhận bạn đã chuyển khoản. Admin sẽ kiểm tra và cập nhật đơn hàng ngay khi nhận tiền.
+              </p>
+            </div>
           </div>
-          <h1 className="mb-2 text-3xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-            Giao dịch thành công
-          </h1>
-          <p className="mx-auto mb-8 max-w-md text-sm leading-6 text-slate-600">
-            App Xanh đã ghi nhận thanh toán cho đơn <span className="font-semibold text-slate-900">#{orderCode}</span>.
-            Đang chuyển bạn đến chi tiết đơn hàng...
-          </p>
-          <div className="mx-auto mb-6 flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white">
-            <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+        </div>
+
+        <div className="grid gap-4 px-6 py-6 sm:px-8">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-900">
+              <Sparkles size={16} /> Thời gian xử lý tham khảo
+            </div>
+            <p className="text-sm leading-6 text-amber-800">
+              Thường trong vòng <span className="font-semibold">5–15 phút</span> trong khung giờ 08:00–22:00.
+              Ngoài giờ sẽ xử lý vào đầu ca tiếp theo.
+            </p>
           </div>
-          <Link href={`/account/orders/${orderCode}`} className="btn-primary justify-center px-5 py-3.5">
-            <Package size={18} /> Xem đơn hàng ngay
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Mã đơn hàng</p>
+              <p className="mt-2 font-mono text-lg font-black text-slate-900">#{orderCode}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tổng thanh toán</p>
+              <p className="mt-2 text-lg font-black text-blue-700">{formatPrice(amount)}</p>
+            </div>
+          </div>
+
+          <Link href={`/account/orders/${orderCode}`}
+            className="flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-white py-3.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50">
+            Xem chi tiết đơn hàng <ChevronRight size={16} />
           </Link>
         </div>
       </div>
-    )
-  }
+    </div>
+  )
 
-  if (paymentStatus === 'confirming') {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-14">
-        <div className="overflow-hidden rounded-[32px] border border-blue-100 shadow-[0_22px_60px_rgba(37,99,235,0.12)]"
-          style={{ background: 'linear-gradient(180deg,#ffffff 0%,#eff6ff 100%)' }}>
-          <div className="border-b border-white/70 px-6 py-5 sm:px-8">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700 backdrop-blur">
-              <ShieldCheck size={14} /> Đang chờ đối soát
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-blue-600 shadow-sm">
-                <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  Đang xác nhận thanh toán
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Hệ thống đã ghi nhận bạn đã chuyển khoản. Admin sẽ kiểm tra và cập nhật đơn hàng ngay khi nhận tiền.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-4 px-6 py-6 sm:px-8">
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-900">
-                <Sparkles size={16} /> Thời gian xử lý tham khảo
-              </div>
-              <p className="text-sm leading-6 text-amber-800">
-                Thường trong vòng <span className="font-semibold">5–15 phút</span> trong khung giờ 08:00–22:00.
-                Ngoài giờ sẽ xử lý vào đầu ca tiếp theo.
-              </p>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Mã đơn hàng</p>
-                <p className="mt-2 font-mono text-lg font-black text-slate-900">#{orderCode}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Tổng thanh toán</p>
-                <p className="mt-2 text-lg font-black text-blue-700">{formatPrice(amount)}</p>
-              </div>
-            </div>
-
-            <Link href={`/account/orders/${orderCode}`}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-white py-3.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50">
-              Xem chi tiết đơn hàng <ChevronRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
+  // ── Pending (main payment page) ──
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+
+      {/* Hero header */}
       <div className="mb-8 overflow-hidden rounded-[36px] px-6 py-7 text-white shadow-[0_30px_90px_rgba(15,23,42,0.22)] sm:px-8"
         style={{ background: 'linear-gradient(135deg,#0f172a 0%,#1d4ed8 58%,#22d3ee 100%)' }}>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -341,6 +388,8 @@ function PaymentContent() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
+
+        {/* Left: QR */}
         <section className="overflow-hidden rounded-[32px] border border-blue-100 bg-white shadow-[0_18px_60px_rgba(37,99,235,0.08)]">
           <div className="border-b border-slate-100 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
@@ -365,9 +414,8 @@ function PaymentContent() {
               <div className="mx-auto mb-5 flex w-fit rounded-[28px] border border-slate-100 bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
                 <Image
                   src={qrUrl}
-                  alt="QR thanh toán App Xanh"
-                  width={256}
-                  height={256}
+                  alt="QR thanh toán XanhSoft"
+                  width={256} height={256}
                   className="h-64 w-64 rounded-2xl object-contain"
                   onError={e => {
                     ;(e.target as HTMLImageElement).src =
@@ -379,14 +427,15 @@ function PaymentContent() {
               <p className="text-sm font-semibold text-slate-700">
                 Mở ứng dụng ngân hàng → quét QR → kiểm tra nội dung → xác nhận.
               </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Hỗ trợ hầu hết app ngân hàng Việt Nam qua chuẩn VietQR.
-              </p>
+              <p className="mt-1 text-xs text-slate-400">Hỗ trợ hầu hết app ngân hàng Việt Nam qua chuẩn VietQR.</p>
             </div>
           </div>
         </section>
 
+        {/* Right: Transfer info + Confirm */}
         <section className="space-y-6">
+
+          {/* Bank info */}
           <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.06)]">
             <div className="border-b border-slate-100 px-6 py-5 sm:px-7">
               <div className="flex items-center gap-3">
@@ -416,9 +465,7 @@ function PaymentContent() {
                     </p>
                   </div>
                   {item.copyValue && (
-                    <button
-                      type="button"
-                      onClick={() => copy(item.copyValue!, item.label)}
+                    <button type="button" onClick={() => copy(item.copyValue!, item.label)}
                       className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-50">
                       <Copy size={14} /> Sao chép
                     </button>
@@ -428,6 +475,7 @@ function PaymentContent() {
             </div>
           </div>
 
+          {/* Confirm button */}
           <div className="overflow-hidden rounded-[32px] border border-emerald-200 shadow-[0_18px_60px_rgba(22,163,74,0.08)]"
             style={{ background: 'linear-gradient(180deg,#f0fdf4 0%,#ffffff 100%)' }}>
             <div className="px-6 py-6 sm:px-7">
@@ -469,6 +517,7 @@ function PaymentContent() {
             </div>
           </div>
 
+          {/* Footer link */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
             <span className="text-sm text-slate-500">Cần kiểm tra hoặc quay về sau?</span>
             <Link href={`/account/orders/${orderCode}`}
@@ -486,12 +535,11 @@ function PaymentContent() {
 
 export default function PaymentPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      }>
+    <Suspense fallback={
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
       <PaymentContent />
     </Suspense>
   )
