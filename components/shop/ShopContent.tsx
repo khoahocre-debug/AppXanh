@@ -1,14 +1,13 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Search, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { formatPrice, discountPercent, cn } from '@/lib/utils'
 import { useCartStore } from '@/lib/stores/cart'
-import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import type { Product, Category, ProductVariant } from '@/types'
 
+// ── Icons ─────────────────────────────────────────────────
 const ICONS: Record<string, React.ReactNode> = {
   'ai-chatbot': (
     <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -69,7 +68,7 @@ const ICONS: Record<string, React.ReactNode> = {
     <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <rect width="80" height="80" rx="20" fill="#ECFEFF"/>
       <rect x="10" y="22" width="60" height="38" rx="7" fill="#0891B2"/>
-      <rect x="15" y="27" width="50" height="24" rx="4" fill="#CFFAFE"/>
+      <rect x="15" y="27" width="50" height="24" rx="4" fill="#CFFAFE" fillOpacity="0.3"/>
       <path d="M24 35l-6 5 6 5" stroke="#0891B2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M35 35l6 5-6 5" stroke="#0891B2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M28 62H40M40 62H52M40 60v4" stroke="#0891B2" strokeWidth="2.5" strokeLinecap="round"/>
@@ -96,6 +95,7 @@ const CAT_EMOJI: Record<string, string> = {
   'hoc-tap': '📚', 'giai-tri': '🎵', 'cong-cu-dev': '💻',
 }
 
+// ── StockBadge ────────────────────────────────────────────
 function StockBadge() {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: '#16A34A' }}>
@@ -108,6 +108,7 @@ function StockBadge() {
   )
 }
 
+// ── ProductCard ───────────────────────────────────────────
 function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCartStore()
   const [showPicker, setShowPicker] = useState(false)
@@ -118,36 +119,24 @@ function ProductCard({ product }: { product: Product }) {
   const badge = product.badge_text ? BADGE_COLORS[product.badge_text] : null
   const variants = product.product_variants ?? []
   const hasMultipleVariants = variants.length > 1
-
   const coverImage = product.product_images?.find((img: any) => img.sort_order === 0)
-    ?? product.product_images?.[0]
-    ?? null
+    ?? product.product_images?.[0] ?? null
 
   const handleQuickAdd = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault(); e.stopPropagation()
     if (isOutOfStock) return
-    if (hasMultipleVariants) {
-      setShowPicker(true)
-    } else {
-      addItem(product, variants[0] ?? null, 1)
-      toast.success('Đã thêm vào giỏ!', { description: product.name })
-    }
+    if (hasMultipleVariants) { setShowPicker(true) }
+    else { addItem(product, variants[0] ?? null, 1); toast.success('Đã thêm vào giỏ!', { description: product.name }) }
   }
 
   const handlePickVariant = (e: React.MouseEvent, variant: ProductVariant) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault(); e.stopPropagation()
     addItem(product, variant, 1)
     setShowPicker(false)
     toast.success('Đã thêm vào giỏ!', { description: `${product.name} — ${variant.option_value}` })
   }
 
-  const closePicker = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setShowPicker(false)
-  }
+  const closePicker = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setShowPicker(false) }
 
   return (
     <Link href={`/product/${product.slug}`}>
@@ -157,63 +146,45 @@ function ProductCard({ product }: { product: Product }) {
         'hover:-translate-y-1 hover:shadow-[0_16px_48px_rgba(37,99,235,0.12)] hover:border-blue-200',
         isOutOfStock ? 'opacity-60 border-slate-200' : 'border-slate-200/80',
       )}>
-
-        {/* Image area 16:9 */}
         <div className="relative w-full overflow-hidden rounded-t-2xl" style={{ paddingTop: '56.25%' }}>
           <div className="absolute inset-0 flex items-center justify-center"
             style={{ background: 'linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 55%, #f0fdf4 100%)' }}>
-
-            {/* Blobs */}
             <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full opacity-25 pointer-events-none"
               style={{ background: 'radial-gradient(circle, #3B82F6, transparent)' }} />
             <div className="absolute -bottom-6 -left-6 w-20 h-20 rounded-full opacity-20 pointer-events-none"
               style={{ background: 'radial-gradient(circle, #06B6D4, transparent)' }} />
 
-            {/* Image or icon */}
             {coverImage ? (
-              <img
-                src={coverImage.image_url}
-                alt={coverImage.alt_text || product.name}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
+              <img src={coverImage.image_url} alt={coverImage.alt_text || product.name}
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             ) : (
               <div className="w-16 h-16 md:w-20 md:h-20 group-hover:scale-110 transition-transform duration-300 drop-shadow-sm relative z-10">
                 {icon}
               </div>
             )}
 
-            {/* Badge */}
             {badge && (
               <div className="absolute top-2.5 left-2.5 z-20">
                 <span className="text-xs font-bold px-2 py-1 rounded-lg shadow-sm"
-                  style={{ background: badge.bg, color: badge.text }}>
-                  {product.badge_text}
-                </span>
+                  style={{ background: badge.bg, color: badge.text }}>{product.badge_text}</span>
               </div>
             )}
 
-            {/* Discount */}
             {discount >= 10 && (
               <div className="absolute top-2.5 right-2.5 z-20">
                 <span className="text-xs font-black px-2 py-1 rounded-lg shadow-sm"
-                  style={{ background: '#FEF9C3', color: '#854D0E' }}>
-                  -{discount}%
-                </span>
+                  style={{ background: '#FEF9C3', color: '#854D0E' }}>-{discount}%</span>
               </div>
             )}
 
-            {/* Out of stock */}
             {isOutOfStock && (
               <div className="absolute inset-0 z-20 flex items-center justify-center rounded-t-2xl"
                 style={{ background: 'rgba(255,255,255,0.75)' }}>
                 <span className="text-xs font-bold px-3 py-1.5 rounded-full shadow"
-                  style={{ background: '#1E293B', color: 'white' }}>
-                  Hết hàng
-                </span>
+                  style={{ background: '#1E293B', color: 'white' }}>Hết hàng</span>
               </div>
             )}
 
-            {/* Quick add */}
             {!isOutOfStock && (
               <button onClick={handleQuickAdd}
                 className="absolute bottom-2.5 right-2.5 z-20 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1.5 group-hover:translate-y-0">
@@ -229,7 +200,6 @@ function ProductCard({ product }: { product: Product }) {
           </div>
         </div>
 
-        {/* Variant picker */}
         {showPicker && (
           <>
             <div className="fixed inset-0 z-30" onClick={closePicker} />
@@ -238,14 +208,11 @@ function ProductCard({ product }: { product: Product }) {
               <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Chọn biến thể</p>
-                  <button onClick={closePicker} className="text-slate-400 hover:text-slate-600">
-                    <X size={14} />
-                  </button>
+                  <button onClick={closePicker} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {variants.map(variant => (
-                    <button key={variant.id}
-                      onClick={e => handlePickVariant(e, variant)}
+                    <button key={variant.id} onClick={e => handlePickVariant(e, variant)}
                       disabled={variant.stock === 0}
                       className="px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all disabled:opacity-40"
                       style={{ borderColor: '#2563EB', color: '#2563EB', background: 'white' }}
@@ -264,12 +231,9 @@ function ProductCard({ product }: { product: Product }) {
           </>
         )}
 
-        {/* Content */}
         <div className="flex flex-col flex-1 p-3.5 md:p-4 gap-1.5">
           {product.categories && (
-            <span className="text-xs font-bold" style={{ color: '#2563EB' }}>
-              {product.categories.name}
-            </span>
+            <span className="text-xs font-bold" style={{ color: '#2563EB' }}>{product.categories.name}</span>
           )}
           <h3 className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors"
             style={{ fontFamily: 'Sora, sans-serif' }}>
@@ -282,9 +246,7 @@ function ProductCard({ product }: { product: Product }) {
           )}
           <div className="flex items-center justify-between pt-2.5 mt-auto border-t" style={{ borderColor: '#F1F5F9' }}>
             <div className="flex flex-col leading-tight">
-              <span className="text-base md:text-lg font-black" style={{ color: '#2563EB' }}>
-                {formatPrice(product.price)}
-              </span>
+              <span className="text-base md:text-lg font-black" style={{ color: '#2563EB' }}>{formatPrice(product.price)}</span>
               {product.compare_at_price && product.compare_at_price > product.price && (
                 <span className="text-xs text-slate-400 line-through">{formatPrice(product.compare_at_price)}</span>
               )}
@@ -299,42 +261,28 @@ function ProductCard({ product }: { product: Product }) {
   )
 }
 
-export function ShopContent() {
-  const searchParams = useSearchParams()
-  const initCategory = searchParams.get('category') ?? 'all'
+// ── ShopContent — nhận initial props từ server, filter ở client ──
+interface Props {
+  initialProducts: Product[]
+  initialCategories: Category[]
+  initialCategory?: string
+  initialSearch?: string
+  initialSort?: 'newest' | 'price_asc' | 'price_desc' | 'name_asc'
+}
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState(initCategory)
-  const [sort, setSort] = useState<'newest' | 'price_asc' | 'price_desc' | 'name_asc'>('newest')
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const supabase = createClient()
-        const { data: productsData, error: pErr } = await supabase
-          .from('products')
-          .select(`*, categories(*), product_variants(*), product_images(*)`)
-          .eq('status', 'active')
-        if (pErr) { setError(pErr.message); setLoading(false); return }
-        const { data: categoriesData } = await supabase
-          .from('categories').select('*').eq('is_active', true).order('sort_order')
-        setProducts(productsData ?? [])
-        setCategories(categoriesData ?? [])
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+export function ShopContent({
+  initialProducts,
+  initialCategories,
+  initialCategory = 'all',
+  initialSearch = '',
+  initialSort = 'newest',
+}: Props) {
+  const [search, setSearch] = useState(initialSearch)
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory)
+  const [sort, setSort] = useState<'newest' | 'price_asc' | 'price_desc' | 'name_asc'>(initialSort)
 
   const filtered = useMemo(() => {
-    let list = [...products]
+    let list = [...initialProducts]
     if (search) list = list.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
     if (selectedCategory !== 'all') list = list.filter(p => p.categories?.slug === selectedCategory)
     switch (sort) {
@@ -344,25 +292,19 @@ export function ShopContent() {
       default: list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     }
     return list
-  }, [products, search, selectedCategory, sort])
-
-  if (error) return (
-    <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-      <div className="text-5xl mb-4">⚠️</div>
-      <p className="font-bold text-slate-900 mb-2">Lỗi kết nối</p>
-      <p className="text-sm" style={{ color: '#EF4444' }}>{error}</p>
-    </div>
-  )
+  }, [initialProducts, search, selectedCategory, sort])
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
       <div className="mb-7">
         <p className="text-xs font-bold uppercase tracking-widest mb-1.5" style={{ color: '#2563EB' }}>Cửa Hàng</p>
         <h1 className="text-2xl md:text-3xl font-black text-slate-900" style={{ fontFamily: 'Sora, sans-serif' }}>
-          Tất Cả Sản Phẩm
+          {selectedCategory !== 'all'
+            ? initialCategories.find(c => c.slug === selectedCategory)?.name ?? 'Sản Phẩm'
+            : 'Tất Cả Sản Phẩm'}
         </h1>
         <p className="text-sm mt-1" style={{ color: '#64748B' }}>
-          {loading ? 'Đang tải...' : `${products.length} sản phẩm premium giá tốt nhất`}
+          {initialProducts.length} sản phẩm premium giá tốt nhất
         </p>
       </div>
 
@@ -390,7 +332,7 @@ export function ShopContent() {
       </div>
 
       <div className="flex gap-6">
-        {/* Sidebar */}
+        {/* Sidebar desktop */}
         <aside className="hidden md:block w-56 flex-shrink-0">
           <div className="sticky top-24 rounded-2xl overflow-hidden border"
             style={{ borderColor: '#E2E8F0', background: 'white' }}>
@@ -399,21 +341,32 @@ export function ShopContent() {
             </div>
             <ul className="p-2 space-y-0.5">
               {[
-                { slug: 'all', name: 'Tất cả', emoji: '🏪', count: products.length },
-                ...categories.map(c => ({ slug: c.slug, name: c.name, emoji: CAT_EMOJI[c.slug] ?? '📦', count: products.filter(p => p.categories?.slug === c.slug).length }))
+                { slug: 'all', name: 'Tất cả', emoji: '🏪', count: initialProducts.length },
+                ...initialCategories.map(c => ({
+                  slug: c.slug, name: c.name,
+                  emoji: CAT_EMOJI[c.slug] ?? '📦',
+                  count: initialProducts.filter(p => p.categories?.slug === c.slug).length,
+                }))
               ].map(item => {
                 const isActive = selectedCategory === item.slug
                 return (
                   <li key={item.slug}>
                     <button onClick={() => setSelectedCategory(item.slug)}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-between"
-                      style={{ background: isActive ? '#EFF6FF' : 'transparent', color: isActive ? '#1D4ED8' : '#475569', fontWeight: isActive ? 600 : 500 }}>
+                      style={{
+                        background: isActive ? '#EFF6FF' : 'transparent',
+                        color: isActive ? '#1D4ED8' : '#475569',
+                        fontWeight: isActive ? 600 : 500,
+                      }}>
                       <span className="flex items-center gap-2 truncate">
                         <span className="text-base flex-shrink-0">{item.emoji}</span>
                         <span className="truncate">{item.name}</span>
                       </span>
                       <span className="text-xs px-1.5 py-0.5 rounded-md font-semibold flex-shrink-0"
-                        style={{ background: isActive ? '#DBEAFE' : '#F1F5F9', color: isActive ? '#1D4ED8' : '#64748B' }}>
+                        style={{
+                          background: isActive ? '#DBEAFE' : '#F1F5F9',
+                          color: isActive ? '#1D4ED8' : '#64748B',
+                        }}>
                         {item.count}
                       </span>
                     </button>
@@ -424,12 +377,12 @@ export function ShopContent() {
           </div>
         </aside>
 
-        {/* Main */}
+        {/* Main content */}
         <div className="flex-1 min-w-0">
-          {/* Mobile chips */}
+          {/* Mobile category chips */}
           <div className="md:hidden -mx-1 px-1 mb-4 overflow-x-auto">
             <div className="flex gap-2 pb-1.5" style={{ width: 'max-content' }}>
-              {[{ slug: 'all', name: 'Tất cả' }, ...categories.map(c => ({ slug: c.slug, name: c.name }))].map(cat => (
+              {[{ slug: 'all', name: 'Tất cả' }, ...initialCategories.map(c => ({ slug: c.slug, name: c.name }))].map(cat => (
                 <button key={cat.slug} onClick={() => setSelectedCategory(cat.slug)}
                   className="flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border-2 transition-all"
                   style={selectedCategory === cat.slug
@@ -441,38 +394,20 @@ export function ShopContent() {
             </div>
           </div>
 
-          {!loading && (
-            <p className="text-sm mb-4 flex items-center gap-2" style={{ color: '#64748B' }}>
-              {search
-                ? <>Kết quả cho "<strong className="text-slate-800">{search}</strong>": <strong className="text-slate-800">{filtered.length}</strong> sản phẩm</>
-                : <>Hiển thị <strong className="text-slate-800">{filtered.length}</strong> sản phẩm</>
-              }
-              {(search || selectedCategory !== 'all') && (
-                <button onClick={() => { setSearch(''); setSelectedCategory('all') }}
-                  className="text-xs font-semibold underline" style={{ color: '#2563EB' }}>
-                  Xóa bộ lọc
-                </button>
-              )}
-            </p>
-          )}
+          <p className="text-sm mb-4 flex items-center gap-2" style={{ color: '#64748B' }}>
+            {search
+              ? <>Kết quả cho "<strong className="text-slate-800">{search}</strong>": <strong className="text-slate-800">{filtered.length}</strong> sản phẩm</>
+              : <>Hiển thị <strong className="text-slate-800">{filtered.length}</strong> sản phẩm</>
+            }
+            {(search || selectedCategory !== 'all') && (
+              <button onClick={() => { setSearch(''); setSelectedCategory('all') }}
+                className="text-xs font-semibold underline" style={{ color: '#2563EB' }}>
+                Xóa bộ lọc
+              </button>
+            )}
+          </p>
 
-          {loading && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-2xl overflow-hidden border border-slate-200 animate-pulse bg-white">
-                  <div className="w-full" style={{ paddingTop: '56.25%', background: 'linear-gradient(135deg, #F0F9FF, #E0F2FE)' }} />
-                  <div className="p-3.5 space-y-2">
-                    <div className="h-2.5 rounded-full" style={{ background: '#E2E8F0', width: '35%' }} />
-                    <div className="h-3.5 rounded-full" style={{ background: '#E2E8F0' }} />
-                    <div className="h-3.5 rounded-full" style={{ background: '#E2E8F0', width: '75%' }} />
-                    <div className="h-5 rounded-full mt-3" style={{ background: '#DBEAFE', width: '45%' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!loading && filtered.length === 0 && (
+          {filtered.length === 0 ? (
             <div className="text-center py-20 px-4">
               <div className="w-20 h-20 mx-auto mb-5 rounded-full flex items-center justify-center text-4xl" style={{ background: '#F1F5F9' }}>🔍</div>
               <p className="text-lg font-bold text-slate-700 mb-1.5">Không tìm thấy sản phẩm</p>
@@ -481,9 +416,7 @@ export function ShopContent() {
                 Xem tất cả sản phẩm
               </button>
             </div>
-          )}
-
-          {!loading && filtered.length > 0 && (
+          ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
               {filtered.map(product => (
                 <ProductCard key={product.id} product={product} />
