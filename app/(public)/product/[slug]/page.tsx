@@ -103,6 +103,25 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const canonicalUrl = getCanonicalUrl(product.slug)
   const coverImage = getCoverImage(images)
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Trang chủ', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Shop', item: `${SITE_URL}/shop` },
+      ...(product.categories ? [{
+        '@type': 'ListItem', position: 3,
+        name: product.categories.name,
+        item: `${SITE_URL}/shop/${product.categories.slug}`,
+      }, {
+        '@type': 'ListItem', position: 4,
+        name: product.name, item: canonicalUrl,
+      }] : [{
+        '@type': 'ListItem', position: 3,
+        name: product.name, item: canonicalUrl,
+      }]),
+    ],
+  }
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -164,7 +183,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       <Script
         id="product-schema"
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([jsonLd, breadcrumbLd]) }}
       />
       <ProductDetail product={product} />
     </>
