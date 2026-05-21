@@ -117,7 +117,7 @@ const GUIDES = [
     title: 'Chính Sách Bảo Hành',
     steps: [
       { n: '01', title: 'Phạm vi bảo hành', desc: 'App Xanh bảo hành đăng nhập lần đầu. Nếu email/mật khẩu không đúng hoặc không đăng nhập được ngay sau khi nhận, liên hệ hỗ trợ ngay.' },
-      { n: '02', title: 'Cách yêu cầu bảo hành', desc: 'Nhắn Zalo 0888993991 kèm mã đơn hàng và mô tả vấn đề. Phản hồi trong vòng 30 phút (8:00–22:00).' },
+      { n: '02', title: 'Cách yêu cầu bảo hành', desc: 'Nhắn Zalo 0888666518 kèm mã đơn hàng và mô tả vấn đề. Phản hồi trong vòng 30 phút (8:00–22:00).' },
       { n: '03', title: 'Xử lý bảo hành', desc: 'Admin sẽ kiểm tra và đổi tài khoản mới hoặc cung cấp thông tin đăng nhập chính xác. Thời gian xử lý thường dưới 1 giờ.' },
       { n: '04', title: 'Không được bảo hành', desc: 'Trường hợp tự ý đổi mật khẩu, thêm bảo mật 2 lớp (2FA) hoặc vi phạm điều khoản của nhà cung cấp sẽ không được bảo hành.' },
     ],
@@ -147,7 +147,7 @@ export default function GuidesPage() {
             <Link href="/shop" className="btn-primary py-3 px-7 justify-center">
               Mua Ngay →
             </Link>
-            <a href="https://zalo.me/0888993991" target="_blank"
+            <a href="https://zalo.me/0888666518" target="_blank"
               className="btn-outline py-3 px-7 justify-center">
               💬 Chat Zalo Hỗ Trợ
             </a>
@@ -273,7 +273,7 @@ export default function GuidesPage() {
             </div>
             <p className="font-bold text-slate-900 mb-1">Video hướng dẫn đang được cập nhật</p>
             <p className="text-slate-500 text-sm mb-4">Trong thời gian chờ, liên hệ Zalo để được hướng dẫn trực tiếp</p>
-            <a href="https://zalo.me/0888993991" target="_blank"
+            <a href="https://zalo.me/0888666518" target="_blank"
               className="btn-primary inline-flex justify-center">
               💬 Chat Zalo Ngay
             </a>
@@ -325,7 +325,7 @@ export default function GuidesPage() {
                 Đội ngũ App Xanh luôn sẵn sàng hỗ trợ bạn qua Zalo từ 8:00 đến 22:00 hàng ngày.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <a href="https://zalo.me/0888993991" target="_blank"
+                <a href="https://zalo.me/0888666518" target="_blank"
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl font-bold text-base bg-white hover:bg-blue-50 transition-all"
                   style={{ color: '#1D4ED8' }}>
                   💬 Chat Zalo Ngay
@@ -336,7 +336,7 @@ export default function GuidesPage() {
                 </Link>
               </div>
               <div className="mt-6 flex flex-wrap justify-center gap-5 text-blue-200 text-sm">
-                <span>📞 Zalo: 0888993991</span>
+                <span>📞 Zalo: 0888666518</span>
                 <span>⏰ 8:00 – 22:00 hàng ngày</span>
                 <span>⚡ Phản hồi trong 5 phút</span>
               </div>
@@ -347,3 +347,4 @@ export default function GuidesPage() {
     </div>
   )
 }
+

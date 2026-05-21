@@ -428,3 +428,4 @@ export function ShopContent({
     </div>
   )
 }
+

@@ -46,7 +46,7 @@ function emailFooter() {
     <tr>
       <td style="text-align:center;">
         <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.8;">
-          Cần hỗ trợ? <a href="https://zalo.me/0888993991" style="color:#2563eb;text-decoration:none;font-weight:600;">Zalo 0888993991</a> &nbsp;·&nbsp; 08:00–22:00 hàng ngày<br/>
+          Cần hỗ trợ? <a href="https://zalo.me/0888666518" style="color:#2563eb;text-decoration:none;font-weight:600;">Zalo 0888666518</a> &nbsp;·&nbsp; 08:00–22:00 hàng ngày<br/>
           <a href="${SITE}" style="color:#94a3b8;text-decoration:none;">xanhsoft.com</a> &nbsp;·&nbsp; © ${new Date().getFullYear()} XanhSoft
         </p>
       </td>
@@ -348,7 +348,7 @@ export async function sendOrderCompletedEmail({
           <p style="margin:0;font-size:14px;font-weight:700;color:#166534;">Chính sách bảo hành</p>
           <p style="margin:4px 0 0;font-size:13px;color:#16a34a;line-height:1.6;">
             XanhSoft bảo hành đăng nhập lần đầu. Nếu không đăng nhập được,
-            liên hệ Zalo <strong>0888993991</strong> để được hỗ trợ đổi tài khoản mới hoặc hoàn tiền trong 24h.
+            liên hệ Zalo <strong>0888666518</strong> để được hỗ trợ đổi tài khoản mới hoặc hoàn tiền trong 24h.
           </p>
         </td>
       </tr>
@@ -375,3 +375,4 @@ export async function sendOrderCompletedEmail({
     html,
   })
 }
+

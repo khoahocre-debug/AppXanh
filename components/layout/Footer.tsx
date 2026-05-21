@@ -145,8 +145,8 @@ export function Footer() {
                   { label: 'Hướng Dẫn Mua', href: '/guides' },
                   { label: 'Câu Hỏi Thường Gặp', href: '/guides#faq' },
                   { label: 'Tra Cứu Đơn Hàng', href: '/account/orders' },
-                  { label: 'Liên Hệ Zalo', href: 'https://zalo.me/0888993991' },
-                  { label: 'Báo Lỗi', href: 'https://zalo.me/0888993991' },
+                  { label: 'Liên Hệ Zalo', href: 'https://zalo.me/0888666518' },
+                  { label: 'Báo Lỗi', href: 'https://zalo.me/0888666518' },
                 ].map(item => (
                   <li key={item.label}>
                     <Link href={item.href}
@@ -186,7 +186,7 @@ export function Footer() {
               <h4 className="font-bold text-sm mb-4 uppercase tracking-wider" style={{ color: '#94A3B8' }}>Liên Hệ</h4>
               <ul className="space-y-3.5">
                 <li>
-                  <a href="https://zalo.me/0888993991"
+                  <a href="https://zalo.me/0888666518"
                     className="flex items-start gap-2.5 group">
                     <span className="text-base mt-0.5">📱</span>
                     <div>
@@ -258,3 +258,4 @@ export function Footer() {
     </footer>
   )
 }
+

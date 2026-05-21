@@ -561,7 +561,7 @@ export function ReviewsSection({ productId, productName }: Props) {
               {!qaReplyTo && (
                 <p className="text-xs text-slate-400">
                   Hoặc{' '}
-                  <a href="https://zalo.me/0888993991" target="_blank" rel="noopener noreferrer"
+                  <a href="https://zalo.me/0888666518" target="_blank" rel="noopener noreferrer"
                     className="font-semibold hover:underline" style={{ color: '#2563EB' }}>
                     chat Zalo
                   </a>{' '}
@@ -586,3 +586,4 @@ export function ReviewsSection({ productId, productName }: Props) {
     </div>
   )
 }
+

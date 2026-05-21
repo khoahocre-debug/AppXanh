@@ -31,3 +31,4 @@ export async function GET(request: Request) {
   // No code = redirect to confirm page to handle hash token
 return NextResponse.redirect(`${origin}/auth/confirm`)
 }
+

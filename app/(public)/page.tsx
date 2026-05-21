@@ -236,7 +236,7 @@ function HeroSection() {
                 style={{ background: 'linear-gradient(135deg, #2563EB, #0891B2)', boxShadow: '0 8px 32px rgba(37,99,235,0.3)' }}>
                 🛍️ Xem Tất Cả Deal →
               </Link>
-              <a href="https://zalo.me/0888993991"
+              <a href="https://zalo.me/0888666518"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all hover:bg-blue-50"
                 style={{ border: '2px solid #BFDBFE', color: '#1D4ED8', background: 'rgba(255,255,255,0.8)' }}>
                 💬 Tư Vấn Miễn Phí
@@ -680,7 +680,7 @@ function CtaSection() {
                 style={{ color: '#1D4ED8' }}>
                 Xem Sản Phẩm Ngay →
               </Link>
-              <a href="https://zalo.me/0888993991"
+              <a href="https://zalo.me/0888666518"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-base border-2 border-white text-white hover:bg-white/10 transition-all">
                 💬 Chat Zalo Ngay
               </a>
@@ -696,3 +696,4 @@ function CtaSection() {
     </section>
   )
 }
+

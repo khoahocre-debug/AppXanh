@@ -256,3 +256,4 @@ export function SearchBar({ open, onClose }: Props) {
     </>
   )
 }
+

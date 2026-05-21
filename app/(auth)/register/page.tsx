@@ -145,3 +145,4 @@ fetch('/api/send-welcome', {
     </div>
   )
 }
+

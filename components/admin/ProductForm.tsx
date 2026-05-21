@@ -1373,3 +1373,4 @@ export function ProductForm({ categories, product }: Props) {
     </div>
   )
 }
+

@@ -392,3 +392,4 @@ export function ProductDetail({ product }: { product: Product & { product_review
     </div>
   )
 }
+
